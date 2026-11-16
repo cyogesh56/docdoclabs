@@ -1,0 +1,2451 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b7a6b"><meta name="docdoc-target" content="app">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<title>DocDoc Lab</title>
+<style>
+html{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);color-scheme:light}
+body{margin:0}img{max-width:100%}[hidden]{display:none!important}
+/* Layout: one column, three screens (library, corners, lab). Controls sit under the image so a thumb reaches them. */
+:root {
+  --bg: #edeff1; --surface: #ffffff; --ink: #12161c; --muted: #596473; --line: #d3d9df;
+  --accent: #0b7a6b; --accent-ink: #ffffff; --soft: #e1f0ed; --danger: #a8281f; --stage: #dfe3e7;
+  --mono: ui-monospace, "SF Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1215; --surface: #171c20; --ink: #e9edf0; --muted: #98a3ad; --line: #28313a;
+    --accent: #39c2a6; --accent-ink: #06241e; --soft: #15302b; --danger: #ff8a80; --stage: #0b0e10; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1215; --surface: #171c20; --ink: #e9edf0; --muted: #98a3ad; --line: #28313a;
+  --accent: #39c2a6; --accent-ink: #06241e; --soft: #15302b; --danger: #ff8a80; --stage: #0b0e10; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.45 var(--sans); -webkit-text-size-adjust: 100%; }
+.wrap { max-width: 760px; margin: 0 auto; padding-block: 16px 28px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+h1 { font-size: 22px; line-height: 1.2; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 17px; margin: 22px 0 10px; }
+h3 { font-size: 13px; margin: 18px 0 8px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.sub, .note, .empty { color: var(--muted); margin: 2px 0 0; font-size: 13px; }
+.ver, .ms, .mono { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.lead { margin: 0 0 14px; max-width: 62ch; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.row.foot { margin-top: 18px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 18px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 600 15px var(--sans); cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.btn.danger { color: var(--danger); }
+.btn.small { min-height: 38px; padding: 0 14px; font-size: 14px; }
+.btn:active { transform: translateY(1px); }
+:is(.btn, .chip, .rate button, input, canvas):focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.stage { position: relative; background: var(--stage); border: 1px solid var(--line); border-radius: 12px; padding: 8px; display: grid; place-items: center; min-height: 120px; }
+.stage canvas { display: block; max-width: 100%; height: auto; border-radius: 4px; }
+#cropCv { touch-action: none; cursor: crosshair; }
+#loupe { position: absolute; top: 12px; width: 110px; height: 110px; border-radius: 50%; border: 2px solid var(--accent); box-shadow: 0 4px 14px rgba(0,0,0,0.35); pointer-events: none; background: #000; }
+.ms { position: absolute; right: 12px; bottom: 10px; background: color-mix(in srgb, var(--surface) 88%, transparent); padding: 2px 6px; border-radius: 6px; }
+.stage-wait { position: absolute; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--surface) 55%, transparent); border-radius: 12px; font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 600 14px var(--sans); cursor: pointer; touch-action: manipulation; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip .star { color: var(--accent); }
+.slider { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; margin: 12px 0; }
+.slider label { font-weight: 600; font-size: 14px; }
+.slider output { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.slider input { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); min-height: 34px; }
+.rate { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.rate button { display: grid; gap: 1px; justify-items: center; padding: 8px 2px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; font-family: var(--sans); touch-action: manipulation; }
+.rate b { font: 700 18px var(--mono); }
+.rate span { font-size: 11px; color: var(--muted); text-align: center; line-height: 1.15; }
+.rate button[aria-pressed="true"] { background: var(--accent); border-color: transparent; }
+.rate button[aria-pressed="true"] b, .rate button[aria-pressed="true"] span { color: var(--accent-ink); }
+.chk { display: inline-flex; align-items: center; gap: 8px; min-height: 46px; font-weight: 600; }
+.chk input { width: 20px; height: 20px; accent-color: var(--accent); }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.scan { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.scan img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; background: var(--stage); display: block; }
+.scan .open { text-align: left; background: none; border: 0; padding: 4px 0; color: var(--ink); font: inherit; cursor: pointer; min-width: 0; }
+.scan .open strong { display: block; }
+.scan .open span { color: var(--muted); font-size: 13px; }
+.scan .del { min-height: 44px; min-width: 44px; background: none; border: 0; color: var(--muted); cursor: pointer; font: 600 13px var(--sans); }
+.panel { background: var(--soft); border-radius: 12px; padding: 14px; margin: 12px 0; }
+.stats { font-family: var(--mono); font-size: 13px; margin: 16px 0 0; }
+#toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 600; max-width: calc(100vw - 32px); z-index: 20; }
+@media (prefers-reduced-motion: no-preference) { .btn, .chip { transition: background 0.12s, border-color 0.12s; } }
+.pin { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding: 4px 0 10px; margin-top: -4px; }
+.pin canvas { max-height: 36vh; width: auto; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.pin { box-shadow: -20px 0 0 var(--bg), 20px 0 0 var(--bg); }
+/* v2: camera, crop rating, training panel */
+.panel.bad { background: color-mix(in srgb, var(--danger) 12%, var(--surface)); border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent); }
+.panel .mono { margin: 0 0 4px; color: var(--ink); }
+.btn[disabled] { opacity: 0.45; cursor: default; }
+.btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.stage.cam { padding: 0; overflow: hidden; background: #000; min-height: 240px; }
+.stage.cam video { display: block; width: 100%; max-height: 62vh; object-fit: contain; background: #000; }
+.flash { position: absolute; inset: 0; background: #fff; opacity: 0.75; pointer-events: none; }
+.camlast { position: absolute; left: 10px; bottom: 10px; width: 56px; height: 56px; object-fit: cover; border-radius: 8px; border: 2px solid #fff; }
+.camrow { justify-content: space-between; margin-top: 12px; }
+.shutter { width: 72px; height: 72px; border-radius: 50%; border: 4px solid var(--ink); background: var(--surface); box-shadow: inset 0 0 0 4px var(--bg), inset 0 0 0 40px var(--accent); cursor: pointer; touch-action: manipulation; }
+.shutter:active { transform: scale(0.94); }
+.shutter:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.scan { grid-template-columns: 64px minmax(0, 1fr) auto auto; }
+.scan .del { padding: 0 6px; }
+.badge { display: inline-block; font: 600 11px var(--mono); padding: 1px 6px; border-radius: 6px; background: var(--soft); color: var(--ink); margin-left: 4px; }
+#cropErr { margin-top: 6px; }
+@media (max-width: 420px) { .row.foot .btn { flex: 1 1 auto; padding: 0 12px; } }
+
+</style></head><body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>DocDoc Lab</h1>
+      <p class="sub">Trainer for auto-crop and scan filters. Everything runs on this device.</p>
+    </div>
+    <span class="ver" id="ver">lab v2</span>
+  </header>
+
+  <section id="vHome" aria-label="Library">
+    <div id="err" class="panel bad" hidden role="alert">
+      <strong id="errTitle">Something went wrong</strong>
+      <p class="note" id="errText"></p>
+      <button class="btn small" id="btnErrOk" type="button">Dismiss</button>
+    </div>
+    <div id="inboxBox" class="panel" hidden>
+      <strong id="inboxTitle"></strong>
+      <p class="note">These photos were captured but not processed yet. They are saved on this device.</p>
+      <div class="row" style="margin-top:8px">
+        <button class="btn primary small" id="btnInboxGo" type="button">Continue</button>
+        <button class="btn small danger" id="btnInboxDrop" type="button">Discard them</button>
+      </div>
+    </div>
+    <p class="lead">Capture a page and fix its corners, then rate the filters. Corner fixes train the auto-crop; filter ratings tune the filter defaults.</p>
+    <div class="row">
+      <button class="btn primary" id="btnCam" type="button">Camera</button>
+      <label class="btn" for="inCam" id="lblSysCam">Phone camera app</label>
+      <label class="btn" for="inFile">Import photos</label>
+      <button class="btn" id="btnSample" type="button">Try a sample</button>
+    </div>
+    <input id="inCam" type="file" accept="image/*" capture="environment" hidden>
+    <input id="inFile" type="file" accept="image/*" multiple hidden>
+    <p class="stats" id="stats">0 scans</p>
+
+    <h2>Auto-crop training</h2>
+    <div class="panel" id="trainBox">
+      <p class="mono" id="trainStats">No corrected scans yet.</p>
+      <p class="note" id="trainNote">Fix the corners on at least 5 scans, then train. Training re-weights how the detector chooses between its guesses, using your corrections.</p>
+      <div class="row" style="margin-top:10px">
+        <button class="btn small primary" id="btnTrain" type="button" disabled>Train on my corrections</button>
+        <button class="btn small" id="btnTrainReset" type="button" hidden>Back to built-in</button>
+      </div>
+      <p class="note" id="trainResult" aria-live="polite"></p>
+    </div>
+
+    <h2>Library</h2>
+    <ul id="list" class="list"></ul>
+    <div id="empty" class="panel">
+      <strong>No scans yet.</strong>
+      <p class="note" style="margin-top:4px">Good test material: a letter on a wooden table, a receipt on a dark surface, a white page on a white desk, a licence under a lamp. Photos where the auto-crop fails are the most useful ones.</p>
+    </div>
+    <div class="row foot">
+      <button class="btn" id="btnExport" type="button">Export dataset (.zip)</button>
+      <button class="btn danger" id="btnWipe" type="button">Delete all</button>
+    </div>
+    <p class="note">Photos and labels stay in this browser until you export them. The zip holds your original photos, so keep it private.</p>
+  </section>
+
+  <section id="vCam" hidden aria-label="Camera">
+    <div class="stage cam">
+      <video id="camVideo" playsinline muted autoplay></video>
+      <div id="camFlash" class="flash" hidden></div>
+      <img id="camLast" class="camlast" alt="" hidden>
+    </div>
+    <p class="note" id="camNote">Hold the phone above the page and keep all four corners in view.</p>
+    <div class="slider" id="camZoomBox" hidden>
+      <label for="camZoom">Zoom</label><output id="camZoomOut">1.0×</output>
+      <input type="range" id="camZoom" min="1" max="4" step="0.1" value="1">
+    </div>
+    <div class="row camrow">
+      <button class="btn" id="btnCamClose" type="button">Close</button>
+      <button class="btn" id="btnCamTorch" type="button" aria-pressed="false" hidden>Light</button>
+      <button class="shutter" id="btnShot" type="button" aria-label="Take photo"></button>
+      <button class="btn primary" id="btnCamDone" type="button" disabled>Done</button>
+    </div>
+  </section>
+
+  <section id="vCrop" hidden aria-label="Adjust corners">
+    <h2 style="margin-top:6px">Check the corners</h2>
+    <p id="cropNote" class="note"></p>
+    <div class="stage" id="cropStage" style="margin-top:8px">
+      <canvas id="cropCv" aria-label="Photo with draggable page corners"></canvas>
+      <canvas id="loupe" width="220" height="220" hidden></canvas>
+      <div id="cropWait" class="stage-wait" hidden>Finding edges…</div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn small" id="btnAuto" type="button">Back to auto</button>
+      <button class="btn small" id="btnFull" type="button">Full image</button>
+      <label class="chk" for="chkId"><input type="checkbox" id="chkId"> ID card ratio</label>
+    </div>
+    <h3>How was the auto-crop?</h3>
+    <div id="cropRate" class="rate" role="group" aria-label="Auto-crop rating"></div>
+    <p class="note" id="cropErr"></p>
+    <h3>What made it hard? (optional)</h3>
+    <div id="cropTags" class="chips" role="group" aria-label="Why the auto-crop struggled"></div>
+    <label class="chk" for="chkTrain" style="margin-top:8px"><input type="checkbox" id="chkTrain" checked> Corners are exact: use this scan for training</label>
+    <div class="row foot">
+      <button class="btn danger" id="btnCropCancel" type="button">Discard</button>
+      <button class="btn" id="btnCropNext" type="button">Save crop, next</button>
+      <button class="btn primary" id="btnCropGo" type="button">Save, go to filters</button>
+    </div>
+    <p class="note" id="cropQueue"></p>
+  </section>
+
+  <section id="vLab" hidden aria-label="Filter lab">
+    <div class="pin">
+      <div class="stage">
+        <canvas id="labCv" aria-label="Filtered scan preview"></canvas>
+        <span id="ms" class="ms"></span>
+        <div id="wait" class="stage-wait" hidden>Working…</div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn small" id="cmp" type="button">Hold to compare</button>
+        <span id="sugg" class="note"></span>
+      </div>
+    </div>
+    <h3>Filter</h3>
+    <div id="chips" class="chips" role="group" aria-label="Filter"></div>
+    <div id="sliders"></div>
+    <button class="btn small" id="btnReset" type="button">Reset sliders</button>
+    <h3>Rate this result</h3>
+    <div id="rate" class="rate" role="group" aria-label="Rating"></div>
+    <h3>What looks wrong? (optional)</h3>
+    <div id="tags" class="chips" role="group" aria-label="Problems"></div>
+    <div class="row foot">
+      <button class="btn" id="btnDone" type="button">Done</button>
+      <button class="btn primary" id="btnSave" type="button">Save label</button>
+    </div>
+    <p class="note" id="saveNote"></p>
+  </section>
+</div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script id="ddsrc" type="text/plain">
+/* DocDoc scan filters: JavaScript port of docdoc_filters.py (same recipe, same constants).
+ *
+ * Images are plain objects { w, h, data } where data is RGBA bytes (an ImageData works as-is).
+ * Pipeline: flatten the lighting in linear light, then apply contrast to luminance only.
+ * Pure typed-array maths, no OpenCV, so it runs in any browser, Worker or Capacitor WebView.
+ */
+const DD = (() => {
+  'use strict';
+  const GAMMA = 2.2, WORK = 1000;
+  const LIN = new Float32Array(256);
+  for (let i = 0; i < 256; i++) LIN[i] = Math.pow(i / 255, GAMMA);
+  const SN = 4096, SRGB = new Float32Array(SN + 1);
+  for (let i = 0; i <= SN; i++) SRGB[i] = Math.pow(i / SN, 1 / GAMMA);
+  const toS = v => SRGB[v <= 0 ? 0 : v >= 1 ? SN : (v * SN + 0.5) | 0];
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const odd = n => { n = Math.max(3, Math.round(n)); return n % 2 ? n : n + 1; };
+  const Y = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+  const DEFAULTS = {
+    original: {},
+    document: { contrast: 0.6, sharpen: 0.5 },
+    photo: { light: 0.55, wb: 0.5, contrast: 0.3, vibrance: 0.06 },
+    grayscale: { contrast: 0.6, sharpen: 0.5 },
+    bw: { softness: 0.07, bias: 0 },
+  };
+
+  // ------------------------------------------------------------------ resampling / blur
+  function boxDown(src, w, h, nw, nh) {
+    const out = new Float32Array(nw * nh), sx = w / nw, sy = h / nh;
+    for (let y = 0; y < nh; y++) {
+      const y0 = Math.floor(y * sy), y1 = Math.min(h, Math.max(y0 + 1, Math.floor((y + 1) * sy)));
+      for (let x = 0; x < nw; x++) {
+        const x0 = Math.floor(x * sx), x1 = Math.min(w, Math.max(x0 + 1, Math.floor((x + 1) * sx)));
+        let s = 0;
+        for (let yy = y0; yy < y1; yy++) { const o = yy * w; for (let xx = x0; xx < x1; xx++) s += src[o + xx]; }
+        out[y * nw + x] = s / ((y1 - y0) * (x1 - x0));
+      }
+    }
+    return out;
+  }
+
+  function resizeBilinear(src, w, h, nw, nh) {
+    const out = new Float32Array(nw * nh), sx = w / nw, sy = h / nh;
+    const x0 = new Int32Array(nw), x1 = new Int32Array(nw), fx = new Float32Array(nw);
+    for (let x = 0; x < nw; x++) {
+      const f = (x + 0.5) * sx - 0.5, i = Math.floor(f);
+      x0[x] = clamp(i, 0, w - 1); x1[x] = clamp(i + 1, 0, w - 1); fx[x] = clamp(f - i, 0, 1);
+    }
+    for (let y = 0; y < nh; y++) {
+      const f = (y + 0.5) * sy - 0.5, i = Math.floor(f);
+      const ya = clamp(i, 0, h - 1) * w, yb = clamp(i + 1, 0, h - 1) * w, fy = clamp(f - i, 0, 1), o = y * nw;
+      for (let x = 0; x < nw; x++) {
+        const a = src[ya + x0[x]] * (1 - fx[x]) + src[ya + x1[x]] * fx[x];
+        const b = src[yb + x0[x]] * (1 - fx[x]) + src[yb + x1[x]] * fx[x];
+        out[o + x] = a * (1 - fy) + b * fy;
+      }
+    }
+    return out;
+  }
+
+  function gaussian(src, w, h, sigma) {
+    const r = Math.max(1, Math.ceil(sigma * 3)), k = new Float32Array(2 * r + 1);
+    let s = 0;
+    for (let i = -r; i <= r; i++) { const v = Math.exp(-(i * i) / (2 * sigma * sigma)); k[i + r] = v; s += v; }
+    for (let i = 0; i < k.length; i++) k[i] /= s;
+    const tmp = new Float32Array(w * h), out = new Float32Array(w * h);
+    for (let y = 0; y < h; y++) {
+      const o = y * w;
+      for (let x = 0; x < w; x++) {
+        let acc = 0;
+        for (let i = -r; i <= r; i++) { let xx = x + i; xx = xx < 0 ? 0 : xx >= w ? w - 1 : xx; acc += src[o + xx] * k[i + r]; }
+        tmp[o + x] = acc;
+      }
+    }
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        let acc = 0;
+        for (let i = -r; i <= r; i++) { let yy = y + i; yy = yy < 0 ? 0 : yy >= h ? h - 1 : yy; acc += tmp[yy * w + x] * k[i + r]; }
+        out[y * w + x] = acc;
+      }
+    }
+    return out;
+  }
+
+  function morph(src, w, h, k, isMax) {
+    const r = (k - 1) >> 1, tmp = new Float32Array(w * h), out = new Float32Array(w * h);
+    for (let y = 0; y < h; y++) {
+      const o = y * w;
+      for (let x = 0; x < w; x++) {
+        const lo = Math.max(0, x - r), hi = Math.min(w - 1, x + r);
+        let m = src[o + lo];
+        if (isMax) { for (let i = lo + 1; i <= hi; i++) if (src[o + i] > m) m = src[o + i]; }
+        else { for (let i = lo + 1; i <= hi; i++) if (src[o + i] < m) m = src[o + i]; }
+        tmp[o + x] = m;
+      }
+    }
+    for (let x = 0; x < w; x++) {
+      for (let y = 0; y < h; y++) {
+        const lo = Math.max(0, y - r), hi = Math.min(h - 1, y + r);
+        let m = tmp[lo * w + x];
+        if (isMax) { for (let i = lo + 1; i <= hi; i++) if (tmp[i * w + x] > m) m = tmp[i * w + x]; }
+        else { for (let i = lo + 1; i <= hi; i++) if (tmp[i * w + x] < m) m = tmp[i * w + x]; }
+        out[y * w + x] = m;
+      }
+    }
+    return out;
+  }
+
+  // ------------------------------------------------------------------------ statistics
+  /** Percentile p (0-100) of arr over [lo,hi]; if minV is given, only values > minV count. */
+  function q(arr, p, lo, hi, minV) {
+    const B = 4096, hist = new Uint32Array(B), sc = (B - 1) / (hi - lo);
+    let n = 0;
+    for (let i = 0; i < arr.length; i++) {
+      const v = arr[i];
+      if (minV !== undefined && !(v > minV)) continue;
+      hist[clamp(((v - lo) * sc + 0.5) | 0, 0, B - 1)]++; n++;
+    }
+    if (!n) return { v: null, n: 0 };
+    const target = (n * p) / 100;
+    let c = 0;
+    for (let b = 0; b < B; b++) { c += hist[b]; if (c >= target) return { v: lo + b / sc, n }; }
+    return { v: hi, n };
+  }
+
+  function otsu(hist, total) {
+    let sum = 0;
+    for (let i = 0; i < 256; i++) sum += i * hist[i];
+    let wB = 0, sB = 0, best = -1, t = 127;
+    for (let i = 0; i < 256; i++) {
+      wB += hist[i]; if (!wB) continue;
+      const wF = total - wB; if (!wF) break;
+      sB += i * hist[i];
+      const mB = sB / wB, mF = (sum - sB) / wF, v = wB * wF * (mB - mF) * (mB - mF);
+      if (v > best) { best = v; t = i; }
+    }
+    return t;
+  }
+
+  // ------------------------------------------------------------------------ tone helpers
+  const curve = (y, a) => y + a * (y * y * (3 - 2 * y) - y);
+  const shoulder = (l, s = 0.86, e = 0.95) => { let t = clamp((l - s) / (e - s), 0, 1); t = t * t * (3 - 2 * t); return l + t * (1 - l); };
+
+  function unsharp(l, w, h, sigmaFrac, amount, thresh = 0.012) {
+    const sigma = Math.max(0.7, sigmaFrac * Math.max(w, h)), b = gaussian(l, w, h, sigma), out = new Float32Array(l.length);
+    for (let i = 0; i < l.length; i++) {
+      const d = l[i] - b[i], gate = clamp((Math.abs(d) - thresh) / thresh, 0, 1);
+      out[i] = clamp(l[i] + amount * d * gate, 0, 1);
+    }
+    return out;
+  }
+
+  // ------------------------------------------------------------------- lighting estimate
+  function illumination(ch, w, h, closeFrac = 0.013, blurFrac = 0.008) {
+    const s = Math.min(1, WORK / Math.max(w, h));
+    let sw = w, sh = h, small = ch;
+    if (s < 1) { sw = Math.max(8, Math.round(w * s)); sh = Math.max(8, Math.round(h * s)); small = boxDown(ch, w, h, sw, sh); }
+    const long = Math.max(sw, sh), k = odd(closeFrac * long);
+    let bg = morph(morph(small, sw, sh, k, true), sw, sh, k, false);
+    bg = gaussian(bg, sw, sh, Math.max(1, blurFrac * long));
+    return sw === w && sh === h ? bg : resizeBilinear(bg, sw, sh, w, h);
+  }
+
+  function splitLinear(data, n) {
+    const R = new Float32Array(n), G = new Float32Array(n), B = new Float32Array(n);
+    for (let i = 0, j = 0; i < n; i++, j += 4) { R[i] = LIN[data[j]]; G[i] = LIN[data[j + 1]]; B[i] = LIN[data[j + 2]]; }
+    return [R, G, B];
+  }
+
+  /** Divide out the lighting per channel (also removes colour cast); paper ends up at 1.0. */
+  function flatten(img) {
+    const { w, h, data } = img, n = w * h, chs = splitLinear(data, n);
+    for (let c = 0; c < 3; c++) {
+      const ch = chs[c], bg = illumination(ch, w, h);
+      for (let i = 0; i < n; i++) { const v = ch[i] / Math.max(bg[i], 0.015); ch[i] = v > 1.2 ? 1.2 : v; }
+    }
+    const [R, G, B] = chs, L = new Float32Array(n);
+    for (let i = 0; i < n; i++) L[i] = Y(R[i], G[i], B[i]);
+    const pp = q(L, 25, 0.8, 1.2, 0.8), wp = pp.n > 500 ? pp.v : 1.0, inv = 1 / Math.max(wp, 0.5);
+    for (let i = 0; i < n; i++) { R[i] = Math.min(1, R[i] * inv); G[i] = Math.min(1, G[i] * inv); B[i] = Math.min(1, B[i] * inv); }
+    return { R, G, B, w, h, n };
+  }
+
+  function grayOut(v, n) {
+    const out = new Uint8ClampedArray(n * 4);
+    for (let i = 0, j = 0; i < n; i++, j += 4) { const g = v[i] * 255; out[j] = g; out[j + 1] = g; out[j + 2] = g; out[j + 3] = 255; }
+    return out;
+  }
+
+  // ---------------------------------------------------------------------------- filters
+  function original(img) { return { w: img.w, h: img.h, data: new Uint8ClampedArray(img.data) }; }
+
+  function documentFilter(img, p) {
+    p = Object.assign({}, DEFAULTS.document, p);
+    const f = flatten(img), { R, G, B, w, h, n } = f, L = new Float32Array(n);
+    for (let i = 0; i < n; i++) { R[i] = toS(R[i]); G[i] = toS(G[i]); B[i] = toS(B[i]); L[i] = Y(R[i], G[i], B[i]); }
+    const bp = clamp(q(L, 0.4, 0, 1).v, 0, 0.35), inv = 1 / (1 - bp);
+    const ST = new Float32Array(n), L2 = new Float32Array(n);
+    for (let i = 0; i < n; i++) { const s = clamp((L[i] - bp) * inv, 0, 1); ST[i] = s; L2[i] = curve(s, p.contrast); }
+    const U = unsharp(L2, w, h, 0.0007, p.sharpen), out = new Uint8ClampedArray(n * 4);
+    for (let i = 0, j = 0; i < n; i++, j += 4) {
+      const r = R[i], g = G[i], b = B[i], mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      const chroma = clamp(((mx - mn) / Math.max(mx, 1e-4)) * 2, 0, 1);
+      const l2 = shoulder(U[i] + 0.8 * chroma * (ST[i] - U[i]));
+      const sc = Math.min(l2 / Math.max(L[i], 1e-4), 4);
+      let rr = r * sc, gg = g * sc, bb = b * sc;
+      const pk = Math.max(rr, gg, bb);
+      if (pk > 1) { rr /= pk; gg /= pk; bb /= pk; }
+      out[j] = rr * 255; out[j + 1] = gg * 255; out[j + 2] = bb * 255; out[j + 3] = 255;
+    }
+    return { w, h, data: out };
+  }
+
+  function grayscale(img, p) {
+    p = Object.assign({}, DEFAULTS.grayscale, p);
+    const f = flatten(img), { R, G, B, w, h, n } = f, L = new Float32Array(n);
+    for (let i = 0; i < n; i++) L[i] = Y(toS(R[i]), toS(G[i]), toS(B[i]));
+    const bp = clamp(q(L, 0.4, 0, 1).v, 0, 0.35), inv = 1 / (1 - bp);
+    for (let i = 0; i < n; i++) L[i] = curve(clamp((L[i] - bp) * inv, 0, 1), p.contrast);
+    const U = unsharp(L, w, h, 0.0007, p.sharpen);
+    for (let i = 0; i < n; i++) U[i] = shoulder(U[i]);
+    return { w, h, data: grayOut(U, n) };
+  }
+
+  function bw(img, p) {
+    p = Object.assign({}, DEFAULTS.bw, p);
+    const f = flatten(img), { R, G, B, w, h, n } = f, y = new Float32Array(n);
+    for (let i = 0; i < n; i++) y[i] = Y(toS(R[i]), toS(G[i]), toS(B[i]));
+    const yb = gaussian(y, w, h, Math.max(0.5, 0.0004 * Math.max(w, h)));
+    const hist = new Uint32Array(256);
+    for (let i = 0; i < n; i++) hist[clamp((yb[i] * 255) | 0, 0, 255)]++;
+    const t = clamp(otsu(hist, n) / 255, 0.45, 0.78) + p.bias, s = p.softness, out = new Float32Array(n);
+    for (let i = 0; i < n; i++) { let x = clamp((yb[i] - (t - s)) / (2 * s), 0, 1); out[i] = x * x * (3 - 2 * x); }
+    return { w, h, data: grayOut(out, n) };
+  }
+
+  function photo(img, p) {
+    p = Object.assign({}, DEFAULTS.photo, p);
+    const { w, h, data } = img, n = w * h, [R, G, B] = splitLinear(data, n), L = new Float32Array(n);
+    for (let i = 0; i < n; i++) L[i] = Y(R[i], G[i], B[i]);
+    // 1) large-scale lighting only, at partial strength
+    const s = Math.min(1, 256 / Math.max(w, h));
+    const sw = s < 1 ? Math.max(8, Math.round(w * s)) : w, sh = s < 1 ? Math.max(8, Math.round(h * s)) : h;
+    const small = s < 1 ? boxDown(L, w, h, sw, sh) : L;
+    const field = gaussian(small, sw, sh, 0.12 * Math.max(sw, sh));
+    const sorted = Float32Array.from(field).sort(), target = sorted[sorted.length >> 1];
+    const gs = new Float32Array(sw * sh);
+    for (let i = 0; i < gs.length; i++) gs[i] = clamp(Math.pow(target / Math.max(field[i], 0.02), p.light), 0.65, 2);
+    const gain = s < 1 ? resizeBilinear(gs, sw, sh, w, h) : gs;
+    for (let i = 0; i < n; i++) { const g = gain[i]; R[i] *= g; G[i] *= g; B[i] *= g; L[i] = Y(R[i], G[i], B[i]); }
+    // 2) mild white balance from the brightest decile, capped
+    const t90 = q(L, 90, 0, 3).v;
+    let sr = 0, sg = 0, sb = 0, cnt = 0;
+    for (let i = 0; i < n; i++) if (L[i] >= t90) { sr += R[i]; sg += G[i]; sb += B[i]; cnt++; }
+    sr /= cnt; sg /= cnt; sb /= cnt;
+    const mm = (sr + sg + sb) / 3;
+    const mr = 1 + p.wb * (clamp(mm / Math.max(sr, 1e-4), 0.8, 1.25) - 1);
+    const mg = 1 + p.wb * (clamp(mm / Math.max(sg, 1e-4), 0.8, 1.25) - 1);
+    const mb = 1 + p.wb * (clamp(mm / Math.max(sb, 1e-4), 0.8, 1.25) - 1);
+    const YS = new Float32Array(n);
+    for (let i = 0; i < n; i++) { R[i] = toS(R[i] * mr); G[i] = toS(G[i] * mg); B[i] = toS(B[i] * mb); YS[i] = Y(R[i], G[i], B[i]); }
+    // 3) percentile levels + gentle S-curve, applied to luminance only
+    const lo = clamp(q(YS, 0.5, 0, 1).v, 0, 0.18), hi = clamp(q(YS, 99.5, 0, 1).v, 0.8, 1), span = hi - lo;
+    const out = new Uint8ClampedArray(n * 4);
+    for (let i = 0, j = 0; i < n; i++, j += 4) {
+      const y2 = curve(clamp((YS[i] - lo) / span, 0, 1), p.contrast), sc = Math.min(y2 / Math.max(YS[i], 1e-4), 4);
+      let r = R[i] * sc, g = G[i] * sc, b = B[i] * sc;
+      const pk = Math.max(r, g, b);
+      if (pk > 1) { r /= pk; g /= pk; b /= pk; }
+      // 4) vibrance: lift only dull colours
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b), k = 1 + p.vibrance * (1 - (mx - mn) / Math.max(mx, 1e-4));
+      const ym = Y(r, g, b);
+      out[j] = clamp(ym + (r - ym) * k, 0, 1) * 255; out[j + 1] = clamp(ym + (g - ym) * k, 0, 1) * 255;
+      out[j + 2] = clamp(ym + (b - ym) * k, 0, 1) * 255; out[j + 3] = 255;
+    }
+    return { w, h, data: out };
+  }
+
+  const FILTERS = { original, document: documentFilter, photo, grayscale, bw };
+  const norm = im => (im.w ? im : { w: im.width, h: im.height, data: im.data });
+  const apply = (name, img, params) => FILTERS[name](norm(img), params);
+
+  /** ID-1 shaped scans (cards) or an ID category default to Photo; everything else to Document. */
+  function suggest(w, h, category) {
+    const r = Math.max(w, h) / Math.max(1, Math.min(w, h));
+    return category === 'ID Cards & Licenses' || Math.abs(r - 1.586) < 0.08 ? 'photo' : 'document';
+  }
+
+  // -------------------------------------------------------------------------- geometry
+  const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  function quadSize(q4) {
+    return [Math.round(Math.max(dist(q4[0], q4[1]), dist(q4[3], q4[2]))), Math.round(Math.max(dist(q4[0], q4[3]), dist(q4[1], q4[2])))];
+  }
+
+  function solve(A) { // 8x9 augmented matrix, Gaussian elimination with pivoting
+    const n = 8;
+    for (let c = 0; c < n; c++) {
+      let p = c;
+      for (let r = c + 1; r < n; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r;
+      [A[c], A[p]] = [A[p], A[c]];
+      for (let r = c + 1; r < n; r++) { const f = A[r][c] / A[c][c]; for (let k = c; k <= n; k++) A[r][k] -= f * A[c][k]; }
+    }
+    const x = new Array(n);
+    for (let r = n - 1; r >= 0; r--) { let s = A[r][n]; for (let k = r + 1; k < n; k++) s -= A[r][k] * x[k]; x[r] = s / A[r][r]; }
+    return x;
+  }
+
+  /** Perspective-correct the quad (TL,TR,BR,BL in source pixels) into a W x H image. */
+  function warp(img, quad, W, H) {
+    img = norm(img);
+    const dst = [[0, 0], [W, 0], [W, H], [0, H]], A = [];
+    for (let k = 0; k < 4; k++) {
+      const [x, y] = dst[k], [u, v] = quad[k];
+      A.push([x, y, 1, 0, 0, 0, -u * x, -u * y, u]); A.push([0, 0, 0, x, y, 1, -v * x, -v * y, v]);
+    }
+    const m = solve(A), { w, h, data } = img, out = new Uint8ClampedArray(W * H * 4);
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const px = x + 0.5, py = y + 0.5, d = m[6] * px + m[7] * py + 1;
+        const u = (m[0] * px + m[1] * py + m[2]) / d - 0.5, v = (m[3] * px + m[4] * py + m[5]) / d - 0.5;
+        const x0 = Math.floor(u), y0 = Math.floor(v), fx = u - x0, fy = v - y0, o = (y * W + x) * 4;
+        const xa = clamp(x0, 0, w - 1), xb = clamp(x0 + 1, 0, w - 1), ya = clamp(y0, 0, h - 1), yb = clamp(y0 + 1, 0, h - 1);
+        const i00 = (ya * w + xa) * 4, i10 = (ya * w + xb) * 4, i01 = (yb * w + xa) * 4, i11 = (yb * w + xb) * 4;
+        for (let c = 0; c < 3; c++) {
+          out[o + c] = (data[i00 + c] * (1 - fx) + data[i10 + c] * fx) * (1 - fy) + (data[i01 + c] * (1 - fx) + data[i11 + c] * fx) * fy;
+        }
+        out[o + 3] = 255;
+      }
+    }
+    return { w: W, h: H, data: out };
+  }
+
+  /** Basic corner finder for capture-then-detect: Otsu split, largest blob, extreme points.
+   *  Good enough to start a scan; the corner editor is the real safety net. Returns null on failure. */
+  function detectQuad(img) {
+    img = norm(img);
+    const { w, h, data } = img, s = Math.min(1, 320 / Math.max(w, h));
+    const sw = Math.max(16, Math.round(w * s)), sh = Math.max(16, Math.round(h * s)), L = new Float32Array(w * h);
+    for (let i = 0, j = 0; i < L.length; i++, j += 4) L[i] = (0.2126 * data[j] + 0.7152 * data[j + 1] + 0.0722 * data[j + 2]) / 255;
+    let g = s < 1 ? boxDown(L, w, h, sw, sh) : L;
+    g = gaussian(g, sw, sh, 2);
+    const hist = new Uint32Array(256);
+    for (let i = 0; i < g.length; i++) hist[clamp((g[i] * 255) | 0, 0, 255)]++;
+    const t0 = otsu(hist, g.length) / 255, N = sw * sh;
+    let best = null;
+    for (const mul of [0.6, 0.8, 1, 1.2, 1.4]) {
+    const t = clamp(t0 * mul, 0.04, 0.96);
+    for (const bright of [true, false]) {
+      const mask = new Uint8Array(N);
+      for (let i = 0; i < N; i++) mask[i] = (bright ? g[i] > t : g[i] <= t) ? 1 : 0;
+      const lab = new Uint8Array(N), stack = new Int32Array(N);
+      for (let i0 = 0; i0 < N; i0++) {
+        if (!mask[i0] || lab[i0]) continue;
+        let sp = 0, cnt = 0, tl = [0, 1e9], br = [0, -1e9], tr = [0, -1e9], bl = [0, 1e9];
+        stack[sp++] = i0; lab[i0] = 1;
+        while (sp) {
+          const i = stack[--sp], x = i % sw, y = (i / sw) | 0; cnt++;
+          const a = x + y, d = x - y;
+          if (a < tl[1]) tl = [i, a]; if (a > br[1]) br = [i, a]; if (d > tr[1]) tr = [i, d]; if (d < bl[1]) bl = [i, d];
+          if (x > 0 && mask[i - 1] && !lab[i - 1]) { lab[i - 1] = 1; stack[sp++] = i - 1; }
+          if (x < sw - 1 && mask[i + 1] && !lab[i + 1]) { lab[i + 1] = 1; stack[sp++] = i + 1; }
+          if (y > 0 && mask[i - sw] && !lab[i - sw]) { lab[i - sw] = 1; stack[sp++] = i - sw; }
+          if (y < sh - 1 && mask[i + sw] && !lab[i + sw]) { lab[i + sw] = 1; stack[sp++] = i + sw; }
+        }
+        const ar = cnt / N;
+        if (ar < 0.12 || ar > 0.97) continue;
+        const pts = [tl[0], tr[0], br[0], bl[0]].map(i => [(i % sw) + 0.5, ((i / sw) | 0) + 0.5]);
+        let area = 0;
+        for (let k = 0; k < 4; k++) { const a = pts[k], b = pts[(k + 1) % 4]; area += a[0] * b[1] - b[0] * a[1]; }
+        const fill = Math.min(1, cnt / Math.max(Math.abs(area) / 2, 1)), score = fill * Math.sqrt(ar);
+        if (!best || score > best.score) best = { score, fill, pts };
+      }
+    }
+    }
+    if (!best || best.fill < 0.8) return null;
+    return { quad: best.pts.map(p => [p[0] * (w / sw), p[1] * (h / sh)]), confidence: best.fill };
+  }
+
+  return { DEFAULTS, apply, suggest, quadSize, warp, detectQuad, FILTERS };
+})();
+if (typeof module !== 'undefined') module.exports = DD;
+
+/* DocDoc page-corner detector v2 (capture-then-detect).
+ *
+ * How it works: many independent guesses, then a small trainable ranker picks one.
+ *   1. Shrink the photo and erase text with a morphological closing, so only large shapes remain.
+ *   2. Guess A: threshold three maps (brightness, distance from the border colour, whiteness),
+ *      take the big blobs, fit four straight sides to each blob's outline.
+ *   3. Guess B: find straight edges with a Hough transform and combine them into quadrilaterals.
+ *      The four image borders count as lines, so a page that runs off the frame can still be found.
+ *   4. Describe every guess with ~20 numbers (edge support, contrast, shape, agreement between guesses).
+ *   5. A linear ranker scores the guesses. Its weights can be re-fitted from a person's corrected corners.
+ *   6. Snap each side of the winner onto the strongest nearby edge at higher resolution.
+ * Pure typed-array maths: runs in a browser, a Worker, Node or a WebView.
+ */
+const DDQ = (() => {
+  'use strict';
+  const VERSION = 'ddq-2';
+  const SMALL = 320;
+  const FEATS = ['bias', 'edgeMean', 'edgeMin', 'polarity', 'area', 'areaSq', 'angles', 'parallel', 'contrastL', 'contrastD',
+    'inBright', 'inSatLow', 'inUniform', 'outDiff', 'dInOut', 'borderSides', 'centre', 'fromMask', 'agree', 'aspect', 'edgeMeanSq'];
+  // Built-in weights: fitted on synthetic desk scenes (see croptest/), replaced by on-device training when available.
+  let W0 = [0, 4.693, 3.586, 3.096, 3.044, -0.053, 2.121, 1.711, 0.538, 0.364, 1.152, 1.594, -1.278, 0.175, 1.916, -3.306, 4.937, 0.933, 2.047, 2.52, 2.193];
+
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const odd = n => { n = Math.max(3, Math.round(n)); return n % 2 ? n : n + 1; };
+
+  // ------------------------------------------------------------------ image helpers
+  function boxDownRGBA(data, w, h, nw, nh) {
+    const R = new Float32Array(nw * nh), G = new Float32Array(nw * nh), B = new Float32Array(nw * nh), sx = w / nw, sy = h / nh;
+    for (let y = 0; y < nh; y++) {
+      const y0 = Math.floor(y * sy), y1 = Math.min(h, Math.max(y0 + 1, Math.floor((y + 1) * sy)));
+      for (let x = 0; x < nw; x++) {
+        const x0 = Math.floor(x * sx), x1 = Math.min(w, Math.max(x0 + 1, Math.floor((x + 1) * sx)));
+        let r = 0, g = 0, b = 0;
+        for (let yy = y0; yy < y1; yy++) { let j = (yy * w + x0) * 4; for (let xx = x0; xx < x1; xx++, j += 4) { r += data[j]; g += data[j + 1]; b += data[j + 2]; } }
+        const k = 1 / ((y1 - y0) * (x1 - x0) * 255), o = y * nw + x; R[o] = r * k; G[o] = g * k; B[o] = b * k;
+      }
+    }
+    return [R, G, B];
+  }
+  function gaussian(src, w, h, sigma) {
+    const r = Math.max(1, Math.ceil(sigma * 3)), k = new Float32Array(2 * r + 1); let s = 0;
+    for (let i = -r; i <= r; i++) { const v = Math.exp(-(i * i) / (2 * sigma * sigma)); k[i + r] = v; s += v; }
+    for (let i = 0; i < k.length; i++) k[i] /= s;
+    const tmp = new Float32Array(w * h), out = new Float32Array(w * h);
+    for (let y = 0; y < h; y++) { const o = y * w; for (let x = 0; x < w; x++) { let a = 0; for (let i = -r; i <= r; i++) { let xx = x + i; xx = xx < 0 ? 0 : xx >= w ? w - 1 : xx; a += src[o + xx] * k[i + r]; } tmp[o + x] = a; } }
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let a = 0; for (let i = -r; i <= r; i++) { let yy = y + i; yy = yy < 0 ? 0 : yy >= h ? h - 1 : yy; a += tmp[yy * w + x] * k[i + r]; } out[y * w + x] = a; }
+    return out;
+  }
+  function morph(src, w, h, k, isMax) {
+    const r = (k - 1) >> 1, tmp = new Float32Array(w * h), out = new Float32Array(w * h);
+    for (let y = 0; y < h; y++) { const o = y * w; for (let x = 0; x < w; x++) { const lo = Math.max(0, x - r), hi = Math.min(w - 1, x + r); let m = src[o + lo]; if (isMax) { for (let i = lo + 1; i <= hi; i++) if (src[o + i] > m) m = src[o + i]; } else { for (let i = lo + 1; i <= hi; i++) if (src[o + i] < m) m = src[o + i]; } tmp[o + x] = m; } }
+    for (let x = 0; x < w; x++) for (let y = 0; y < h; y++) { const lo = Math.max(0, y - r), hi = Math.min(h - 1, y + r); let m = tmp[lo * w + x]; if (isMax) { for (let i = lo + 1; i <= hi; i++) if (tmp[i * w + x] > m) m = tmp[i * w + x]; } else { for (let i = lo + 1; i <= hi; i++) if (tmp[i * w + x] < m) m = tmp[i * w + x]; } out[y * w + x] = m; }
+    return out;
+  }
+  function sobel(src, w, h) {
+    const gx = new Float32Array(w * h), gy = new Float32Array(w * h);
+    for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+      const o = y * w + x, a = src[o - w - 1], b = src[o - w], c = src[o - w + 1], d = src[o - 1], f = src[o + 1], g = src[o + w - 1], hh = src[o + w], i = src[o + w + 1];
+      gx[o] = (c + 2 * f + i - a - 2 * d - g) * 0.25; gy[o] = (g + 2 * hh + i - a - 2 * b - c) * 0.25;
+    }
+    return [gx, gy];
+  }
+  function percentile(arr, p) {
+    let mx = 0; for (let i = 0; i < arr.length; i++) if (arr[i] > mx) mx = arr[i];
+    if (mx <= 0) return 0;
+    const B = 1024, hist = new Uint32Array(B), sc = (B - 1) / mx; for (let i = 0; i < arr.length; i++) hist[(arr[i] * sc) | 0]++;
+    const target = arr.length * p / 100; let c = 0;
+    for (let b = 0; b < B; b++) { c += hist[b]; if (c >= target) return b / sc; }
+    return mx;
+  }
+  function otsu01(arr) {
+    const hist = new Uint32Array(256); let mx = 1e-6; for (let i = 0; i < arr.length; i++) if (arr[i] > mx) mx = arr[i];
+    for (let i = 0; i < arr.length; i++) hist[clamp((arr[i] / mx * 255) | 0, 0, 255)]++;
+    let sum = 0; for (let i = 0; i < 256; i++) sum += i * hist[i];
+    let wB = 0, sB = 0, best = -1, t = 127; const total = arr.length;
+    for (let i = 0; i < 256; i++) { wB += hist[i]; if (!wB) continue; const wF = total - wB; if (!wF) break; sB += i * hist[i]; const mB = sB / wB, mF = (sum - sB) / wF, v = wB * wF * (mB - mF) * (mB - mF); if (v > best) { best = v; t = i; } }
+    return (t / 255) * mx;
+  }
+  const median = a => { const s = Float32Array.from(a).sort(); return s[s.length >> 1]; };
+
+  // -------------------------------------------------------------------- geometry
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  function orderQuad(pts) {
+    const cx = (pts[0][0] + pts[1][0] + pts[2][0] + pts[3][0]) / 4, cy = (pts[0][1] + pts[1][1] + pts[2][1] + pts[3][1]) / 4;
+    const s = pts.slice().sort((a, b) => Math.atan2(a[1] - cy, a[0] - cx) - Math.atan2(b[1] - cy, b[0] - cx));
+    let st = 0; for (let i = 1; i < 4; i++) if (s[i][0] + s[i][1] < s[st][0] + s[st][1]) st = i;
+    return [s[st], s[(st + 1) % 4], s[(st + 2) % 4], s[(st + 3) % 4]];
+  }
+  const quadArea = q => { let a = 0; for (let k = 0; k < 4; k++) { const p = q[k], n = q[(k + 1) % 4]; a += p[0] * n[1] - n[0] * p[1]; } return a / 2; };
+  function convex(q) { let s = 0; for (let k = 0; k < 4; k++) { const c = cross(q[k], q[(k + 1) % 4], q[(k + 2) % 4]); if (c === 0) return false; if (s === 0) s = Math.sign(c); else if (Math.sign(c) !== s) return false; } return true; }
+  /** Largest corner distance between two quads as a fraction of the diagonal (best cyclic alignment). */
+  function quadErr(a, b, w, h, useMean) {
+    const diag = Math.hypot(w, h); let best = Infinity;
+    for (let sft = 0; sft < 4; sft++) { let mx = 0, sum = 0; for (let k = 0; k < 4; k++) { const d = Math.hypot(a[k][0] - b[(k + sft) % 4][0], a[k][1] - b[(k + sft) % 4][1]); sum += d; if (d > mx) mx = d; } const v = useMean ? sum / 4 : mx; if (v < best) best = v; }
+    return best / diag;
+  }
+  function lineThrough(a, b) { const dx = b[0] - a[0], dy = b[1] - a[1], n = Math.hypot(dx, dy) || 1; return { p: a, d: [dx / n, dy / n] }; }
+  function intersect(l1, l2) {
+    const den = l1.d[0] * l2.d[1] - l1.d[1] * l2.d[0]; if (Math.abs(den) < 1e-6) return null;
+    const t = ((l2.p[0] - l1.p[0]) * l2.d[1] - (l2.p[1] - l1.p[1]) * l2.d[0]) / den;
+    return [l1.p[0] + t * l1.d[0], l1.p[1] + t * l1.d[1]];
+  }
+
+  // ------------------------------------------------------------------ preparation
+  function prepare(img) {
+    const w = img.w || img.width, h = img.h || img.height, data = img.data;
+    const s = Math.min(1, SMALL / Math.max(w, h)), sw = Math.max(16, Math.round(w * s)), sh = Math.max(16, Math.round(h * s)), N = sw * sh, long = Math.max(sw, sh);
+    let chs = boxDownRGBA(data, w, h, sw, sh);
+    const k = odd(0.028 * long);
+    chs = chs.map(c => gaussian(morph(morph(c, sw, sh, k, true), sw, sh, k, false), sw, sh, 1.0)); // closing erases text
+    const [R, G, B] = chs, L = new Float32Array(N), Sat = new Float32Array(N), D = new Float32Array(N), Wm = new Float32Array(N);
+    // background colour = median of the border ring
+    const ring = Math.max(2, Math.round(0.03 * long)), br = [], bg = [], bb = [];
+    for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) if (x < ring || y < ring || x >= sw - ring || y >= sh - ring) { const o = y * sw + x; br.push(R[o]); bg.push(G[o]); bb.push(B[o]); }
+    const mr = median(br), mg = median(bg), mb = median(bb);
+    // two-colour border model (striped or checked surfaces): 2-means on the ring, seeded by darkest/brightest
+    let c1 = [mr, mg, mb], c2 = [mr, mg, mb]; { let lo = 9, hi = -1; for (let i = 0; i < br.length; i++) { const l = br[i] + bg[i] + bb[i]; if (l < lo) { lo = l; c1 = [br[i], bg[i], bb[i]]; } if (l > hi) { hi = l; c2 = [br[i], bg[i], bb[i]]; } }
+      for (let it = 0; it < 6; it++) { const a = [0, 0, 0, 0], b = [0, 0, 0, 0]; for (let i = 0; i < br.length; i++) { const d1 = (br[i] - c1[0]) ** 2 + (bg[i] - c1[1]) ** 2 + (bb[i] - c1[2]) ** 2, d2 = (br[i] - c2[0]) ** 2 + (bg[i] - c2[1]) ** 2 + (bb[i] - c2[2]) ** 2, t = d1 <= d2 ? a : b; t[0] += br[i]; t[1] += bg[i]; t[2] += bb[i]; t[3]++; }
+        if (a[3]) c1 = [a[0] / a[3], a[1] / a[3], a[2] / a[3]]; if (b[3]) c2 = [b[0] / b[3], b[1] / b[3], b[2] / b[3]]; } }
+    const D2 = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      const r = R[i], g = G[i], b = B[i], mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      L[i] = 0.2126 * r + 0.7152 * g + 0.0722 * b; Sat[i] = (mx - mn) / Math.max(mx, 0.04);
+      D[i] = Math.min(1, Math.sqrt((r - mr) * (r - mr) + (g - mg) * (g - mg) + (b - mb) * (b - mb)));
+      Wm[i] = clamp(L[i] - 0.8 * Sat[i], 0, 1);
+      D2[i] = Math.min(1, Math.sqrt(Math.min((r - c1[0]) ** 2 + (g - c1[1]) ** 2 + (b - c1[2]) ** 2, (r - c2[0]) ** 2 + (g - c2[1]) ** 2 + (b - c2[2]) ** 2)));
+    }
+    const [gxL, gyL] = sobel(L, sw, sh), [gxD, gyD] = sobel(D, sw, sh), mag = new Float32Array(N), gx = new Float32Array(N), gy = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      const a = Math.hypot(gxL[i], gyL[i]), b = Math.hypot(gxD[i], gyD[i]);
+      if (a >= b) { mag[i] = a; gx[i] = gxL[i]; gy[i] = gyL[i]; } else { mag[i] = b; gx[i] = gxD[i]; gy[i] = gyD[i]; }
+    }
+    const gRef = Math.max(percentile(mag, 96), 0.012);
+    return { w, h, sw, sh, N, long, L, Sat, D, D2, Wm, gxL, gyL, gxD, gyD, gx, gy, mag, gRef };
+  }
+  const at = (f, c, x, y) => f[clamp(y | 0, 0, c.sh - 1) * c.sw + clamp(x | 0, 0, c.sw - 1)];
+
+  // -------------------------------------------------------- guess A: blobs from masks
+  function fillHoles(mask, sw, sh) {
+    const N = sw * sh, seen = new Uint8Array(N), stack = new Int32Array(N); let sp = 0;
+    const push = i => { if (!mask[i] && !seen[i]) { seen[i] = 1; stack[sp++] = i; } };
+    for (let x = 0; x < sw; x++) { push(x); push((sh - 1) * sw + x); }
+    for (let y = 0; y < sh; y++) { push(y * sw); push(y * sw + sw - 1); }
+    while (sp) { const i = stack[--sp], x = i % sw, y = (i / sw) | 0; if (x > 0) push(i - 1); if (x < sw - 1) push(i + 1); if (y > 0) push(i - sw); if (y < sh - 1) push(i + sw); }
+    for (let i = 0; i < N; i++) if (!mask[i] && !seen[i]) mask[i] = 1;
+  }
+  function binMorph(mask, sw, sh, k, isMax) { const f = Float32Array.from(mask), o = morph(f, sw, sh, k, isMax); const out = new Uint8Array(sw * sh); for (let i = 0; i < out.length; i++) out[i] = o[i] > 0.5 ? 1 : 0; return out; }
+  function hull(points) {
+    const p = points.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]); if (p.length < 3) return p;
+    const lo = []; for (const q of p) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
+    const up = []; for (let i = p.length - 1; i >= 0; i--) { const q = p[i]; while (up.length >= 2 && cross(up[up.length - 2], up[up.length - 1], q) <= 0) up.pop(); up.push(q); }
+    lo.pop(); up.pop(); return lo.concat(up);
+  }
+  function maxAreaQuad(hp) {
+    let pts = hp.slice();
+    while (pts.length > 26) { // drop the vertex that changes the outline least
+      let bi = 0, ba = Infinity; const n = pts.length;
+      for (let i = 0; i < n; i++) { const a = Math.abs(cross(pts[(i + n - 1) % n], pts[i], pts[(i + 1) % n])); if (a < ba) { ba = a; bi = i; } }
+      pts.splice(bi, 1);
+    }
+    const n = pts.length; if (n < 4) return null; let best = 0, bq = null;
+    for (let i = 0; i < n - 3; i++) for (let j = i + 1; j < n - 2; j++) for (let k = j + 1; k < n - 1; k++) for (let l = k + 1; l < n; l++) {
+      const a = Math.abs(cross(pts[i], pts[j], pts[k])) + Math.abs(cross(pts[i], pts[k], pts[l]));
+      if (a > best) { best = a; bq = [pts[i], pts[j], pts[k], pts[l]]; }
+    }
+    return bq;
+  }
+  function fitSides(q, boundary, long) {
+    const tol = Math.max(2, 0.012 * long), lines = [];
+    for (let s = 0; s < 4; s++) {
+      const a = q[s], b = q[(s + 1) % 4], dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len;
+      let sel = [];
+      for (const p of boundary) { const t = ((p[0] - a[0]) * ux + (p[1] - a[1]) * uy) / len; if (t < 0.08 || t > 0.92) continue; const d = Math.abs((p[0] - a[0]) * uy - (p[1] - a[1]) * ux); if (d < tol) sel.push(p); }
+      let line = lineThrough(a, b);
+      for (let pass = 0; pass < 2 && sel.length >= 0.35 * len; pass++) {
+        let mx = 0, my = 0; for (const p of sel) { mx += p[0]; my += p[1]; } mx /= sel.length; my /= sel.length;
+        let sxx = 0, sxy = 0, syy = 0; for (const p of sel) { const x = p[0] - mx, y = p[1] - my; sxx += x * x; sxy += x * y; syy += y * y; }
+        const th = 0.5 * Math.atan2(2 * sxy, sxx - syy); line = { p: [mx, my], d: [Math.cos(th), Math.sin(th)] };
+        sel = sel.filter(p => Math.abs((p[0] - mx) * line.d[1] - (p[1] - my) * line.d[0]) < 1.3);
+      }
+      lines.push(line);
+    }
+    const out = [];
+    for (let s = 0; s < 4; s++) { const c = intersect(lines[(s + 3) % 4], lines[s]); out.push(c && Math.hypot(c[0] - q[s][0], c[1] - q[s][1]) < 0.15 * long ? c : q[s]); }
+    return out;
+  }
+  function maskCandidates(c) {
+    const { sw, sh, N, long } = c, out = [], kOpen = odd(0.022 * long);
+    for (const [map, mi] of [[c.L, 0], [c.D, 1], [c.Wm, 2], [c.D2, 3]]) {
+      const t0 = otsu01(map);
+      for (const mul of [0.75, 1, 1.25]) {
+        const t = t0 * mul; let mask = new Uint8Array(N); let on = 0;
+        for (let i = 0; i < N; i++) if (map[i] > t) { mask[i] = 1; on++; }
+        if (on < 0.03 * N) continue;
+        fillHoles(mask, sw, sh); mask = binMorph(binMorph(mask, sw, sh, kOpen, false), sw, sh, kOpen, true);
+        const lab = new Uint8Array(N), stack = new Int32Array(N), comps = [];
+        for (let i0 = 0; i0 < N; i0++) {
+          if (!mask[i0] || lab[i0]) continue; let sp = 0; const px = []; stack[sp++] = i0; lab[i0] = 1;
+          while (sp) { const i = stack[--sp], x = i % sw, y = (i / sw) | 0; px.push(i);
+            if (x > 0 && mask[i - 1] && !lab[i - 1]) { lab[i - 1] = 1; stack[sp++] = i - 1; } if (x < sw - 1 && mask[i + 1] && !lab[i + 1]) { lab[i + 1] = 1; stack[sp++] = i + 1; }
+            if (y > 0 && mask[i - sw] && !lab[i - sw]) { lab[i - sw] = 1; stack[sp++] = i - sw; } if (y < sh - 1 && mask[i + sw] && !lab[i + sw]) { lab[i + sw] = 1; stack[sp++] = i + sw; } }
+          if (px.length >= 0.035 * N && px.length <= 0.985 * N) comps.push(px);
+        }
+        comps.sort((a, b) => b.length - a.length);
+        for (const px of comps.slice(0, 3)) {
+          const inC = new Uint8Array(N); for (const i of px) inC[i] = 1; const boundary = [];
+          for (const i of px) { const x = i % sw, y = (i / sw) | 0; if (x === 0 || y === 0 || x === sw - 1 || y === sh - 1 || !inC[i - 1] || !inC[i + 1] || !inC[i - sw] || !inC[i + sw]) boundary.push([x + 0.5, y + 0.5]); }
+          const q0 = maxAreaQuad(hull(boundary)); if (!q0) continue;
+          const q = orderQuad(fitSides(orderQuad(q0), boundary, long));
+          if (convex(q)) out.push({ q, src: 1, map: mi });
+        }
+      }
+    }
+    return out;
+  }
+
+  // ------------------------------------------------------ guess B: straight edges (Hough)
+  function houghLines(c) {
+    const { sw, sh, N, mag, gx, gy, gRef } = c, TH = 180, diag = Math.ceil(Math.hypot(sw, sh)), RH = 2 * diag + 1, acc = new Float32Array(TH * RH);
+    const cosT = new Float32Array(TH), sinT = new Float32Array(TH); for (let t = 0; t < TH; t++) { cosT[t] = Math.cos(t * Math.PI / TH); sinT[t] = Math.sin(t * Math.PI / TH); }
+    const thr = Math.max(0.35 * gRef, percentile(mag, 86));
+    for (let y = 1; y < sh - 1; y++) for (let x = 1; x < sw - 1; x++) {
+      const i = y * sw + x, m = mag[i]; if (m < thr) continue;
+      let t0 = Math.round(Math.atan2(gy[i], gx[i]) * TH / Math.PI); const wgt = Math.min(m / gRef, 1.5);
+      for (let dt = -4; dt <= 4; dt++) { let t = ((t0 + dt) % TH + TH) % TH; const rho = Math.round(x * cosT[t] + y * sinT[t]) + diag; acc[t * RH + rho] += wgt * (1 - Math.abs(dt) * 0.15); }
+    }
+    const lines = [], taken = [];
+    const cells = []; for (let i = 0; i < acc.length; i++) if (acc[i] > 6) cells.push(i);
+    cells.sort((a, b) => acc[b] - acc[a]);
+    for (const i of cells) {
+      if (lines.length >= 20) break; const t = (i / RH) | 0, r = (i % RH) - diag; let ok = true;
+      for (const [tt, rr] of taken) { let dth = Math.abs(t - tt), dr = Math.abs(r - rr); if (dth > TH / 2) { dth = TH - dth; dr = Math.abs(r + rr); } if (dth <= 7 && dr <= 10) { ok = false; break; } }
+      if (!ok) continue; taken.push([t, r]);
+      const th = t * Math.PI / TH; lines.push({ p: [r * Math.cos(th), r * Math.sin(th)], d: [-Math.sin(th), Math.cos(th)], th, votes: acc[i], border: 0 });
+    }
+    lines.push({ p: [0.5, 0], d: [0, 1], th: 0, votes: 0, border: 1 }, { p: [sw - 0.5, 0], d: [0, 1], th: 0, votes: 0, border: 1 },
+      { p: [0, 0.5], d: [1, 0], th: Math.PI / 2, votes: 0, border: 1 }, { p: [0, sh - 0.5], d: [1, 0], th: Math.PI / 2, votes: 0, border: 1 });
+    return lines;
+  }
+  function sideSupport(c, a, b, n) { // fraction of the side lying on a real edge, plus signed polarity
+    const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len; let hit = 0, pol = 0, cnt = 0;
+    for (let k = 0; k < n; k++) {
+      const t = 0.05 + 0.9 * (k + 0.5) / n, x = a[0] + dx * t, y = a[1] + dy * t; if (x < 1 || y < 1 || x > c.sw - 2 || y > c.sh - 2) { cnt++; continue; }
+      const eL = at(c.gxL, c, x, y) * nx + at(c.gyL, c, x, y) * ny, eD = at(c.gxD, c, x, y) * nx + at(c.gyD, c, x, y) * ny, e = Math.max(Math.abs(eL), Math.abs(eD));
+      hit += Math.min(1, e / (0.55 * c.gRef)); pol += Math.sign(eL) * (Math.abs(eL) > 0.2 * c.gRef ? 1 : 0); cnt++;
+    }
+    return [hit / cnt, pol / cnt];
+  }
+  function lineCandidates(c, maskCands) {
+    const { sw, sh } = c, lines = houghLines(c), pairs = [], cx = sw / 2, cy = sh / 2, minSep = 0.12 * Math.min(sw, sh), out = [];
+    const angDiff = (a, b) => { let d = Math.abs(a - b) % Math.PI; return d > Math.PI / 2 ? Math.PI - d : d; };
+    const offs = l => (cx - l.p[0]) * l.d[1] - (cy - l.p[1]) * l.d[0];
+    let extra = 0; // sides of blob guesses join the pool, so a good side can pair with edges the blob missed
+    for (const m of maskCands || []) for (let s = 0; s < 4 && extra < 16; s++) {
+      const l = lineThrough(m.q[s], m.q[(s + 1) % 4]); l.th = Math.atan2(l.d[0], -l.d[1]); l.border = 0; l.votes = 0;
+      if (lines.some(o => angDiff(o.th, l.th) < 0.05 && Math.abs(Math.abs(offs(o)) - Math.abs(offs(l))) < 3)) continue;
+      lines.push(l); extra++;
+    }
+    for (let i = 0; i < lines.length; i++) for (let j = i + 1; j < lines.length; j++) {
+      const a = lines[i], b = lines[j]; if (angDiff(a.th, b.th) > 0.52) continue;
+      const sgn = a.d[0] * b.d[0] + a.d[1] * b.d[1] >= 0 ? 1 : -1; if (Math.abs(offs(a) - sgn * offs(b)) < minSep) continue;
+      pairs.push([a, b]);
+    }
+    const inB = p => p && p[0] > -0.05 * sw && p[0] < 1.05 * sw && p[1] > -0.05 * sh && p[1] < 1.05 * sh;
+    for (let i = 0; i < pairs.length; i++) for (let j = i + 1; j < pairs.length; j++) {
+      const [a1, a2] = pairs[i], [b1, b2] = pairs[j]; if (a1 === b1 || a1 === b2 || a2 === b1 || a2 === b2) continue;
+      if (angDiff((a1.th + a2.th) / 2, (b1.th + b2.th) / 2) < 0.85 && angDiff(a1.th, b1.th) < 0.85) continue;
+      if (a1.border + a2.border + b1.border + b2.border > 2) continue;
+      const p = [intersect(a1, b1), intersect(a1, b2), intersect(a2, b2), intersect(a2, b1)]; if (!p.every(inB)) continue;
+      const q = orderQuad(p.map(v => [clamp(v[0], 0, sw), clamp(v[1], 0, sh)])); if (!convex(q)) continue;
+      const ar = Math.abs(quadArea(q)) / (sw * sh); if (ar < 0.05 || ar > 0.985) continue;
+      let sup = 0, mn = 1; for (let s = 0; s < 4; s++) { const v = sideSupport(c, q[s], q[(s + 1) % 4], 16)[0]; sup += v; if (v < mn) mn = v; }
+      out.push({ q, src: 0, quick: sup / 4 + 0.5 * mn + 0.15 * Math.sqrt(ar) });
+    }
+    out.sort((a, b) => b.quick - a.quick);
+    return out.slice(0, 60);
+  }
+
+  // -------------------------------------------------------------------- features
+  function features(c, cand) {
+    const { sw, sh } = c, q = cand.q, f = new Float32Array(FEATS.length), min = Math.min(sw, sh);
+    let eSum = 0, eMin = 1, pol = 0, cL = 0, cD = 0, cN = 0, border = 0; const lens = [];
+    const cen = [(q[0][0] + q[1][0] + q[2][0] + q[3][0]) / 4, (q[0][1] + q[1][1] + q[2][1] + q[3][1]) / 4], band = 0.03 * min;
+    for (let s = 0; s < 4; s++) {
+      const a = q[s], b = q[(s + 1) % 4], dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1; lens.push(len);
+      const onBorder = (a[0] < 0.015 * sw && b[0] < 0.015 * sw) || (a[0] > 0.985 * sw && b[0] > 0.985 * sw) || (a[1] < 0.015 * sh && b[1] < 0.015 * sh) || (a[1] > 0.985 * sh && b[1] > 0.985 * sh);
+      if (onBorder) { border++; eSum += 0.45; if (0.45 < eMin) eMin = 0.45; continue; } // unknown edge: neutral credit
+      const [sup, p] = sideSupport(c, a, b, 28); eSum += sup; if (sup < eMin) eMin = sup;
+      let nx = -dy / len, ny = dx / len; const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2; if ((cen[0] - mx) * nx + (cen[1] - my) * ny < 0) { nx = -nx; ny = -ny; }
+      // p was measured along +normal of (a->b); convert so that positive = inside brighter
+      const sgn = ((-dy / len) * nx + (dx / len) * ny) >= 0 ? 1 : -1; pol += p * sgn;
+      let dl = 0, dd = 0, n = 0;
+      for (let k = 0; k < 10; k++) { const t = 0.1 + 0.8 * (k + 0.5) / 10, x = a[0] + dx * t, y = a[1] + dy * t, xi = x + nx * band, yi = y + ny * band, xo = x - nx * band, yo = y - ny * band;
+        if (xo < 0 || yo < 0 || xo > sw - 1 || yo > sh - 1) continue; dl += at(c.L, c, xi, yi) - at(c.L, c, xo, yo); dd += at(c.D, c, xi, yi) - at(c.D, c, xo, yo); n++; }
+      if (n) { cL += Math.abs(dl / n); cD += Math.abs(dd / n); cN++; }
+    }
+    const nb = 4 - border;
+    let li = 0, si = 0, l2 = 0, di = 0, ni = 0;
+    for (let u = 0; u < 9; u++) for (let v = 0; v < 9; v++) {
+      const a = 0.1 + 0.8 * u / 8, b = 0.1 + 0.8 * v / 8, x = (q[0][0] * (1 - a) + q[1][0] * a) * (1 - b) + (q[3][0] * (1 - a) + q[2][0] * a) * b, y = (q[0][1] * (1 - a) + q[1][1] * a) * (1 - b) + (q[3][1] * (1 - a) + q[2][1] * a) * b;
+      const l = at(c.L, c, x, y); li += l; l2 += l * l; si += at(c.Sat, c, x, y); di += at(c.D, c, x, y); ni++;
+    }
+    li /= ni; si /= ni; di /= ni; const sd = Math.sqrt(Math.max(0, l2 / ni - li * li));
+    let lo = 0, dO = 0, no = 0;
+    for (let s = 0; s < 4; s++) for (let k = 0; k < 8; k++) { const t = (k + 0.5) / 8, x0 = q[s][0] + (q[(s + 1) % 4][0] - q[s][0]) * t, y0 = q[s][1] + (q[(s + 1) % 4][1] - q[s][1]) * t, x = cen[0] + (x0 - cen[0]) * 1.14, y = cen[1] + (y0 - cen[1]) * 1.14;
+      if (x < 0 || y < 0 || x > sw - 1 || y > sh - 1) continue; lo += at(c.L, c, x, y); dO += at(c.D, c, x, y); no++; }
+    if (no) { lo /= no; dO /= no; } else { lo = li; dO = di; }
+    let ang = 0; for (let s = 0; s < 4; s++) { const p = q[(s + 3) % 4], o = q[s], n = q[(s + 1) % 4], ax = p[0] - o[0], ay = p[1] - o[1], bx = n[0] - o[0], by = n[1] - o[1]; ang += 1 - Math.abs((ax * bx + ay * by) / ((Math.hypot(ax, ay) || 1) * (Math.hypot(bx, by) || 1))); }
+    const par = (Math.min(lens[0], lens[2]) / Math.max(lens[0], lens[2])) * (Math.min(lens[1], lens[3]) / Math.max(lens[1], lens[3]));
+    const sA = (lens[0] + lens[2]) / 2, sB = (lens[1] + lens[3]) / 2, ratio = Math.max(sA, sB) / Math.max(1, Math.min(sA, sB)); let asp = 0;
+    for (const r of [1.414, 1.294, 1.586]) asp = Math.max(asp, Math.exp(-(((ratio - r) / 0.12) ** 2)));
+    const area = Math.abs(quadArea(q)) / (sw * sh); let inside = true; for (let s = 0; s < 4; s++) if (cross(q[s], q[(s + 1) % 4], [sw / 2, sh / 2]) * Math.sign(quadArea(q)) < 0) inside = false;
+    const eMean = eSum / 4;
+    f[0] = 1; f[1] = eMean; f[2] = eMin; f[3] = nb ? Math.abs(pol / nb) : 0; f[4] = area; f[5] = area * area; f[6] = ang / 4; f[7] = par;
+    f[8] = cN ? Math.min(1, (cL / cN) / 0.3) : 0; f[9] = cN ? Math.min(1, (cD / cN) / 0.3) : 0; f[10] = li; f[11] = 1 - si; f[12] = 1 - Math.min(1, sd / 0.2);
+    f[13] = Math.min(1, Math.abs(li - lo) / 0.3); f[14] = clamp((di - dO) / 0.3, -1, 1); f[15] = border / 4; f[16] = inside ? 1 : 0; f[17] = cand.src; f[18] = 0; f[19] = asp; f[20] = eMean * eMean;
+    return f;
+  }
+  const score = (f, w) => { let s = 0; for (let i = 0; i < f.length; i++) s += f[i] * w[i]; return s; };
+
+  /** All guesses for one photo, described and de-duplicated. Quads are in small-image pixels. */
+  function candidates(c) {
+    const mc = maskCandidates(c), raw = mc.concat(lineCandidates(c, mc)), tol = 0.02, out = [];
+    for (const cand of raw) {
+      let found = null; for (const o of out) if (quadErr(o.q, cand.q, c.sw, c.sh) < tol) { found = o; break; }
+      if (found) { found.n++; if (cand.src === 1 && found.src === 0) { found.q = cand.q; found.src = 1; } } else out.push({ q: cand.q, src: cand.src, n: 1 });
+    }
+    for (const o of out) { o.f = features(c, o); o.f[18] = Math.min(o.n - 1, 6) / 6; }
+    return out;
+  }
+
+  // ------------------------------------------------- snap sides onto edges at full size
+  function refine(img, quad) {
+    const w = img.w || img.width, h = img.h || img.height, data = img.data, N = w * h, L0 = new Float32Array(N);
+    for (let i = 0, j = 0; i < N; i++, j += 4) L0[i] = (0.2126 * data[j] + 0.7152 * data[j + 1] + 0.0722 * data[j + 2]) / 255;
+    const L = gaussian(L0, w, h, Math.max(1, 0.0016 * Math.max(w, h))), [gx, gy] = sobel(L, w, h), R = Math.round(0.014 * Math.max(w, h)) + 2, M = 44;
+    const cen = [(quad[0][0] + quad[1][0] + quad[2][0] + quad[3][0]) / 4, (quad[0][1] + quad[1][1] + quad[2][1] + quad[3][1]) / 4], lines = [];
+    const g = (f, x, y) => f[clamp(Math.round(y), 0, h - 1) * w + clamp(Math.round(x), 0, w - 1)];
+    for (let s = 0; s < 4; s++) {
+      const a = quad[s], b = quad[(s + 1) % 4], dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1; let nx = -dy / len, ny = dx / len;
+      if ((cen[0] - (a[0] + b[0]) / 2) * nx + (cen[1] - (a[1] + b[1]) / 2) * ny < 0) { nx = -nx; ny = -ny; } // normal points inside
+      const onBorder = (a[0] < 0.012 * w && b[0] < 0.012 * w) || (a[0] > 0.988 * w && b[0] > 0.988 * w) || (a[1] < 0.012 * h && b[1] < 0.012 * h) || (a[1] > 0.988 * h && b[1] > 0.988 * h);
+      if (onBorder) { lines.push(lineThrough(a, b)); continue; }
+      let di = 0, cnt = 0; // which side is brighter, measured in wide bands
+      for (let k = 0; k < 16; k++) { const t = 0.1 + 0.8 * (k + 0.5) / 16, x = a[0] + dx * t, y = a[1] + dy * t, o = R + 4; if (x - nx * o < 0 || y - ny * o < 0 || x - nx * o > w - 1 || y - ny * o > h - 1) continue; di += g(L, x + nx * o, y + ny * o) - g(L, x - nx * o, y - ny * o); cnt++; }
+      const want = cnt && Math.abs(di / cnt) > 0.025 ? Math.sign(di) : 0;
+      let best = -Infinity, bda = 0, bdb = 0, base = 0;
+      for (let da = -R; da <= R; da++) for (let db = -R; db <= R; db++) {
+        const ax = a[0] + nx * da, ay = a[1] + ny * da, ex = b[0] + nx * db - ax, ey = b[1] + ny * db - ay; let sum = 0;
+        for (let k = 0; k < M; k++) { const t = 0.06 + 0.88 * (k + 0.5) / M, x = ax + ex * t, y = ay + ey * t; sum += g(gx, x, y) * nx + g(gy, x, y) * ny; }
+        const v = (want ? sum * want : Math.abs(sum)) / M - 0.0006 * (Math.abs(da) + Math.abs(db)); if (da === 0 && db === 0) base = v; if (v > best) { best = v; bda = da; bdb = db; }
+      }
+      if (best < base * 1.12 + 0.002) { bda = 0; bdb = 0; }
+      lines.push(lineThrough([a[0] + nx * bda, a[1] + ny * bda], [b[0] + nx * bdb, b[1] + ny * bdb]));
+    }
+    const out = []; for (let s = 0; s < 4; s++) { const p = intersect(lines[(s + 3) % 4], lines[s]); out.push(p && Math.hypot(p[0] - quad[s][0], p[1] - quad[s][1]) < 3 * R ? [clamp(p[0], 0, w), clamp(p[1], 0, h)] : quad[s]); }
+    return out;
+  }
+
+  // ------------------------------------------------------------------- public API
+  /** Find the page. Returns { quad|null (TL,TR,BR,BL in image pixels), confidence 0-1, cands, version }.
+   *  cands = every guess as { q: 8 numbers normalised 0-1, f: feature vector } for on-device training. */
+  function detect(img, weights, opts) {
+    const w = weights || W0, c = prepare(img), list = candidates(c), kx = c.w / c.sw, ky = c.h / c.sh;
+    const cands = list.map(o => ({ q: o.q.flat().map((v, i) => +(v / (i % 2 ? c.sh : c.sw)).toFixed(4)), f: Array.from(o.f, v => +v.toFixed(4)) }));
+    if (!list.length) return { quad: null, confidence: 0, cands, version: VERSION };
+    let bi = 0, bs = -Infinity, second = -Infinity;
+    list.forEach((o, i) => { const s = score(o.f, w); if (s > bs) { second = bs; bs = s; bi = i; } else if (s > second) second = s; });
+    const top = list[bi], conf = clamp(0.55 * top.f[1] + 0.25 * top.f[2] + 0.2 * top.f[18], 0, 1);
+    if (top.f[1] < 0.3 && top.f[18] < 0.17) return { quad: null, confidence: conf, cands, version: VERSION, pick: bi };
+    let quad = top.q.map(p => [p[0] * kx, p[1] * ky]);
+    if (!(opts && opts.noRefine)) quad = orderQuad(refine(img, quad));
+    return { quad, confidence: conf, cands, version: VERSION, pick: bi };
+  }
+
+  /** Fit ranker weights from labelled photos. samples = [{ cands:[{q,f}], truth:[8 numbers 0-1], w, h }].
+   *  Minimises the expected corner error of the chosen guess, pulled gently toward the starting weights. */
+  function train(samples, start, opts) {
+    const w0 = (start || W0).slice(), o = Object.assign({ iters: 400, lr: 0.05, l2: 0.02, T: 1 }, opts), n = w0.length, w = w0.slice(), m = new Float64Array(n), v = new Float64Array(n);
+    const data = samples.map(s => ({ F: s.cands.map(cd => cd.f), E: s.cands.map(cd => Math.min(0.25, candErr(cd.q, s.truth, s.w, s.h, true))) })).filter(d => d.F.length > 1);
+    for (let it = 1; it <= o.iters; it++) {
+      const grad = new Float64Array(n);
+      for (const d of data) {
+        const sc = d.F.map(f => score(f, w) / o.T), mx = Math.max(...sc), ex = sc.map(x => Math.exp(x - mx)), Z = ex.reduce((a, b) => a + b, 0), p = ex.map(x => x / Z);
+        let E = 0; for (let j = 0; j < p.length; j++) E += p[j] * d.E[j];
+        for (let j = 0; j < p.length; j++) { const gcoef = p[j] * (d.E[j] - E) / o.T; for (let k = 0; k < n; k++) grad[k] += gcoef * d.F[j][k]; }
+      }
+      for (let k = 0; k < n; k++) {
+        const gk = grad[k] / Math.max(1, data.length) * 20 + o.l2 * (w[k] - w0[k]);
+        m[k] = 0.9 * m[k] + 0.1 * gk; v[k] = 0.999 * v[k] + 0.001 * gk * gk;
+        w[k] -= o.lr * (m[k] / (1 - Math.pow(0.9, it))) / (Math.sqrt(v[k] / (1 - Math.pow(0.999, it))) + 1e-8);
+      }
+    }
+    return w;
+  }
+  function candErr(q8, truth8, w, h, useMean) {
+    const a = [], b = []; for (let k = 0; k < 4; k++) { a.push([q8[2 * k] * w, q8[2 * k + 1] * h]); b.push([truth8[2 * k] * w, truth8[2 * k + 1] * h]); }
+    return quadErr(a, b, w, h, useMean);
+  }
+  /** How well a set of weights picks, measured on stored guesses (before edge snapping).
+   *  Returns { n, hit: share picked within tol, reachable: share where any guess is within tol, medianErr }. */
+  function evaluate(samples, weights, tol) {
+    const w = weights || W0; tol = tol || 0.025; let hit = 0, reach = 0; const errs = [];
+    for (const s of samples) {
+      if (!s.cands.length) { errs.push(1); continue; }
+      let bi = 0, bs = -Infinity, bestE = Infinity; s.cands.forEach((cd, i) => { const sc = score(cd.f, w); if (sc > bs) { bs = sc; bi = i; } const e = candErr(cd.q, s.truth, s.w, s.h); if (e < bestE) bestE = e; });
+      const e = candErr(s.cands[bi].q, s.truth, s.w, s.h); errs.push(e); if (e <= tol) hit++; if (bestE <= tol) reach++;
+    }
+    errs.sort((a, b) => a - b); const n = samples.length;
+    return { n, hit: n ? hit / n : 0, reachable: n ? reach / n : 0, medianErr: n ? errs[n >> 1] : 0 };
+  }
+  /** Honest estimate for small sets: train on k-1 folds, test on the held-out fold. */
+  function crossValidate(samples, start, k) {
+    k = Math.min(k || 5, samples.length); let hit = 0;
+    for (let f = 0; f < k; f++) { const tr = samples.filter((_, i) => i % k !== f), te = samples.filter((_, i) => i % k === f); const w = train(tr, start, { iters: 200 }); hit += evaluate(te, w).hit * te.length; }
+    return hit / samples.length;
+  }
+  return { VERSION, FEATS, get W0() { return W0.slice(); }, setDefaults(w) { W0 = w.slice(); }, detect, train, evaluate, crossValidate, quadErr, candErr, orderQuad, refine, prepare, candidates };
+})();
+if (typeof module !== 'undefined') module.exports = DDQ;
+
+</script>
+<script>
+/* DocDoc scan filters: JavaScript port of docdoc_filters.py (same recipe, same constants).
+ *
+ * Images are plain objects { w, h, data } where data is RGBA bytes (an ImageData works as-is).
+ * Pipeline: flatten the lighting in linear light, then apply contrast to luminance only.
+ * Pure typed-array maths, no OpenCV, so it runs in any browser, Worker or Capacitor WebView.
+ */
+const DD = (() => {
+  'use strict';
+  const GAMMA = 2.2, WORK = 1000;
+  const LIN = new Float32Array(256);
+  for (let i = 0; i < 256; i++) LIN[i] = Math.pow(i / 255, GAMMA);
+  const SN = 4096, SRGB = new Float32Array(SN + 1);
+  for (let i = 0; i <= SN; i++) SRGB[i] = Math.pow(i / SN, 1 / GAMMA);
+  const toS = v => SRGB[v <= 0 ? 0 : v >= 1 ? SN : (v * SN + 0.5) | 0];
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const odd = n => { n = Math.max(3, Math.round(n)); return n % 2 ? n : n + 1; };
+  const Y = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+  const DEFAULTS = {
+    original: {},
+    document: { contrast: 0.6, sharpen: 0.5 },
+    photo: { light: 0.55, wb: 0.5, contrast: 0.3, vibrance: 0.06 },
+    grayscale: { contrast: 0.6, sharpen: 0.5 },
+    bw: { softness: 0.07, bias: 0 },
+  };
+
+  // ------------------------------------------------------------------ resampling / blur
+  function boxDown(src, w, h, nw, nh) {
+    const out = new Float32Array(nw * nh), sx = w / nw, sy = h / nh;
+    for (let y = 0; y < nh; y++) {
+      const y0 = Math.floor(y * sy), y1 = Math.min(h, Math.max(y0 + 1, Math.floor((y + 1) * sy)));
+      for (let x = 0; x < nw; x++) {
+        const x0 = Math.floor(x * sx), x1 = Math.min(w, Math.max(x0 + 1, Math.floor((x + 1) * sx)));
+        let s = 0;
+        for (let yy = y0; yy < y1; yy++) { const o = yy * w; for (let xx = x0; xx < x1; xx++) s += src[o + xx]; }
+        out[y * nw + x] = s / ((y1 - y0) * (x1 - x0));
+      }
+    }
+    return out;
+  }
+
+  function resizeBilinear(src, w, h, nw, nh) {
+    const out = new Float32Array(nw * nh), sx = w / nw, sy = h / nh;
+    const x0 = new Int32Array(nw), x1 = new Int32Array(nw), fx = new Float32Array(nw);
+    for (let x = 0; x < nw; x++) {
+      const f = (x + 0.5) * sx - 0.5, i = Math.floor(f);
+      x0[x] = clamp(i, 0, w - 1); x1[x] = clamp(i + 1, 0, w - 1); fx[x] = clamp(f - i, 0, 1);
+    }
+    for (let y = 0; y < nh; y++) {
+      const f = (y + 0.5) * sy - 0.5, i = Math.floor(f);
+      const ya = clamp(i, 0, h - 1) * w, yb = clamp(i + 1, 0, h - 1) * w, fy = clamp(f - i, 0, 1), o = y * nw;
+      for (let x = 0; x < nw; x++) {
+        const a = src[ya + x0[x]] * (1 - fx[x]) + src[ya + x1[x]] * fx[x];
+        const b = src[yb + x0[x]] * (1 - fx[x]) + src[yb + x1[x]] * fx[x];
+        out[o + x] = a * (1 - fy) + b * fy;
+      }
+    }
+    return out;
+  }
+
+  function gaussian(src, w, h, sigma) {
+    const r = Math.max(1, Math.ceil(sigma * 3)), k = new Float32Array(2 * r + 1);
+    let s = 0;
+    for (let i = -r; i <= r; i++) { const v = Math.exp(-(i * i) / (2 * sigma * sigma)); k[i + r] = v; s += v; }
+    for (let i = 0; i < k.length; i++) k[i] /= s;
+    const tmp = new Float32Array(w * h), out = new Float32Array(w * h);
+    for (let y = 0; y < h; y++) {
+      const o = y * w;
+      for (let x = 0; x < w; x++) {
+        let acc = 0;
+        for (let i = -r; i <= r; i++) { let xx = x + i; xx = xx < 0 ? 0 : xx >= w ? w - 1 : xx; acc += src[o + xx] * k[i + r]; }
+        tmp[o + x] = acc;
+      }
+    }
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        let acc = 0;
+        for (let i = -r; i <= r; i++) { let yy = y + i; yy = yy < 0 ? 0 : yy >= h ? h - 1 : yy; acc += tmp[yy * w + x] * k[i + r]; }
+        out[y * w + x] = acc;
+      }
+    }
+    return out;
+  }
+
+  function morph(src, w, h, k, isMax) {
+    const r = (k - 1) >> 1, tmp = new Float32Array(w * h), out = new Float32Array(w * h);
+    for (let y = 0; y < h; y++) {
+      const o = y * w;
+      for (let x = 0; x < w; x++) {
+        const lo = Math.max(0, x - r), hi = Math.min(w - 1, x + r);
+        let m = src[o + lo];
+        if (isMax) { for (let i = lo + 1; i <= hi; i++) if (src[o + i] > m) m = src[o + i]; }
+        else { for (let i = lo + 1; i <= hi; i++) if (src[o + i] < m) m = src[o + i]; }
+        tmp[o + x] = m;
+      }
+    }
+    for (let x = 0; x < w; x++) {
+      for (let y = 0; y < h; y++) {
+        const lo = Math.max(0, y - r), hi = Math.min(h - 1, y + r);
+        let m = tmp[lo * w + x];
+        if (isMax) { for (let i = lo + 1; i <= hi; i++) if (tmp[i * w + x] > m) m = tmp[i * w + x]; }
+        else { for (let i = lo + 1; i <= hi; i++) if (tmp[i * w + x] < m) m = tmp[i * w + x]; }
+        out[y * w + x] = m;
+      }
+    }
+    return out;
+  }
+
+  // ------------------------------------------------------------------------ statistics
+  /** Percentile p (0-100) of arr over [lo,hi]; if minV is given, only values > minV count. */
+  function q(arr, p, lo, hi, minV) {
+    const B = 4096, hist = new Uint32Array(B), sc = (B - 1) / (hi - lo);
+    let n = 0;
+    for (let i = 0; i < arr.length; i++) {
+      const v = arr[i];
+      if (minV !== undefined && !(v > minV)) continue;
+      hist[clamp(((v - lo) * sc + 0.5) | 0, 0, B - 1)]++; n++;
+    }
+    if (!n) return { v: null, n: 0 };
+    const target = (n * p) / 100;
+    let c = 0;
+    for (let b = 0; b < B; b++) { c += hist[b]; if (c >= target) return { v: lo + b / sc, n }; }
+    return { v: hi, n };
+  }
+
+  function otsu(hist, total) {
+    let sum = 0;
+    for (let i = 0; i < 256; i++) sum += i * hist[i];
+    let wB = 0, sB = 0, best = -1, t = 127;
+    for (let i = 0; i < 256; i++) {
+      wB += hist[i]; if (!wB) continue;
+      const wF = total - wB; if (!wF) break;
+      sB += i * hist[i];
+      const mB = sB / wB, mF = (sum - sB) / wF, v = wB * wF * (mB - mF) * (mB - mF);
+      if (v > best) { best = v; t = i; }
+    }
+    return t;
+  }
+
+  // ------------------------------------------------------------------------ tone helpers
+  const curve = (y, a) => y + a * (y * y * (3 - 2 * y) - y);
+  const shoulder = (l, s = 0.86, e = 0.95) => { let t = clamp((l - s) / (e - s), 0, 1); t = t * t * (3 - 2 * t); return l + t * (1 - l); };
+
+  function unsharp(l, w, h, sigmaFrac, amount, thresh = 0.012) {
+    const sigma = Math.max(0.7, sigmaFrac * Math.max(w, h)), b = gaussian(l, w, h, sigma), out = new Float32Array(l.length);
+    for (let i = 0; i < l.length; i++) {
+      const d = l[i] - b[i], gate = clamp((Math.abs(d) - thresh) / thresh, 0, 1);
+      out[i] = clamp(l[i] + amount * d * gate, 0, 1);
+    }
+    return out;
+  }
+
+  // ------------------------------------------------------------------- lighting estimate
+  function illumination(ch, w, h, closeFrac = 0.013, blurFrac = 0.008) {
+    const s = Math.min(1, WORK / Math.max(w, h));
+    let sw = w, sh = h, small = ch;
+    if (s < 1) { sw = Math.max(8, Math.round(w * s)); sh = Math.max(8, Math.round(h * s)); small = boxDown(ch, w, h, sw, sh); }
+    const long = Math.max(sw, sh), k = odd(closeFrac * long);
+    let bg = morph(morph(small, sw, sh, k, true), sw, sh, k, false);
+    bg = gaussian(bg, sw, sh, Math.max(1, blurFrac * long));
+    return sw === w && sh === h ? bg : resizeBilinear(bg, sw, sh, w, h);
+  }
+
+  function splitLinear(data, n) {
+    const R = new Float32Array(n), G = new Float32Array(n), B = new Float32Array(n);
+    for (let i = 0, j = 0; i < n; i++, j += 4) { R[i] = LIN[data[j]]; G[i] = LIN[data[j + 1]]; B[i] = LIN[data[j + 2]]; }
+    return [R, G, B];
+  }
+
+  /** Divide out the lighting per channel (also removes colour cast); paper ends up at 1.0. */
+  function flatten(img) {
+    const { w, h, data } = img, n = w * h, chs = splitLinear(data, n);
+    for (let c = 0; c < 3; c++) {
+      const ch = chs[c], bg = illumination(ch, w, h);
+      for (let i = 0; i < n; i++) { const v = ch[i] / Math.max(bg[i], 0.015); ch[i] = v > 1.2 ? 1.2 : v; }
+    }
+    const [R, G, B] = chs, L = new Float32Array(n);
+    for (let i = 0; i < n; i++) L[i] = Y(R[i], G[i], B[i]);
+    const pp = q(L, 25, 0.8, 1.2, 0.8), wp = pp.n > 500 ? pp.v : 1.0, inv = 1 / Math.max(wp, 0.5);
+    for (let i = 0; i < n; i++) { R[i] = Math.min(1, R[i] * inv); G[i] = Math.min(1, G[i] * inv); B[i] = Math.min(1, B[i] * inv); }
+    return { R, G, B, w, h, n };
+  }
+
+  function grayOut(v, n) {
+    const out = new Uint8ClampedArray(n * 4);
+    for (let i = 0, j = 0; i < n; i++, j += 4) { const g = v[i] * 255; out[j] = g; out[j + 1] = g; out[j + 2] = g; out[j + 3] = 255; }
+    return out;
+  }
+
+  // ---------------------------------------------------------------------------- filters
+  function original(img) { return { w: img.w, h: img.h, data: new Uint8ClampedArray(img.data) }; }
+
+  function documentFilter(img, p) {
+    p = Object.assign({}, DEFAULTS.document, p);
+    const f = flatten(img), { R, G, B, w, h, n } = f, L = new Float32Array(n);
+    for (let i = 0; i < n; i++) { R[i] = toS(R[i]); G[i] = toS(G[i]); B[i] = toS(B[i]); L[i] = Y(R[i], G[i], B[i]); }
+    const bp = clamp(q(L, 0.4, 0, 1).v, 0, 0.35), inv = 1 / (1 - bp);
+    const ST = new Float32Array(n), L2 = new Float32Array(n);
+    for (let i = 0; i < n; i++) { const s = clamp((L[i] - bp) * inv, 0, 1); ST[i] = s; L2[i] = curve(s, p.contrast); }
+    const U = unsharp(L2, w, h, 0.0007, p.sharpen), out = new Uint8ClampedArray(n * 4);
+    for (let i = 0, j = 0; i < n; i++, j += 4) {
+      const r = R[i], g = G[i], b = B[i], mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      const chroma = clamp(((mx - mn) / Math.max(mx, 1e-4)) * 2, 0, 1);
+      const l2 = shoulder(U[i] + 0.8 * chroma * (ST[i] - U[i]));
+      const sc = Math.min(l2 / Math.max(L[i], 1e-4), 4);
+      let rr = r * sc, gg = g * sc, bb = b * sc;
+      const pk = Math.max(rr, gg, bb);
+      if (pk > 1) { rr /= pk; gg /= pk; bb /= pk; }
+      out[j] = rr * 255; out[j + 1] = gg * 255; out[j + 2] = bb * 255; out[j + 3] = 255;
+    }
+    return { w, h, data: out };
+  }
+
+  function grayscale(img, p) {
+    p = Object.assign({}, DEFAULTS.grayscale, p);
+    const f = flatten(img), { R, G, B, w, h, n } = f, L = new Float32Array(n);
+    for (let i = 0; i < n; i++) L[i] = Y(toS(R[i]), toS(G[i]), toS(B[i]));
+    const bp = clamp(q(L, 0.4, 0, 1).v, 0, 0.35), inv = 1 / (1 - bp);
+    for (let i = 0; i < n; i++) L[i] = curve(clamp((L[i] - bp) * inv, 0, 1), p.contrast);
+    const U = unsharp(L, w, h, 0.0007, p.sharpen);
+    for (let i = 0; i < n; i++) U[i] = shoulder(U[i]);
+    return { w, h, data: grayOut(U, n) };
+  }
+
+  function bw(img, p) {
+    p = Object.assign({}, DEFAULTS.bw, p);
+    const f = flatten(img), { R, G, B, w, h, n } = f, y = new Float32Array(n);
+    for (let i = 0; i < n; i++) y[i] = Y(toS(R[i]), toS(G[i]), toS(B[i]));
+    const yb = gaussian(y, w, h, Math.max(0.5, 0.0004 * Math.max(w, h)));
+    const hist = new Uint32Array(256);
+    for (let i = 0; i < n; i++) hist[clamp((yb[i] * 255) | 0, 0, 255)]++;
+    const t = clamp(otsu(hist, n) / 255, 0.45, 0.78) + p.bias, s = p.softness, out = new Float32Array(n);
+    for (let i = 0; i < n; i++) { let x = clamp((yb[i] - (t - s)) / (2 * s), 0, 1); out[i] = x * x * (3 - 2 * x); }
+    return { w, h, data: grayOut(out, n) };
+  }
+
+  function photo(img, p) {
+    p = Object.assign({}, DEFAULTS.photo, p);
+    const { w, h, data } = img, n = w * h, [R, G, B] = splitLinear(data, n), L = new Float32Array(n);
+    for (let i = 0; i < n; i++) L[i] = Y(R[i], G[i], B[i]);
+    // 1) large-scale lighting only, at partial strength
+    const s = Math.min(1, 256 / Math.max(w, h));
+    const sw = s < 1 ? Math.max(8, Math.round(w * s)) : w, sh = s < 1 ? Math.max(8, Math.round(h * s)) : h;
+    const small = s < 1 ? boxDown(L, w, h, sw, sh) : L;
+    const field = gaussian(small, sw, sh, 0.12 * Math.max(sw, sh));
+    const sorted = Float32Array.from(field).sort(), target = sorted[sorted.length >> 1];
+    const gs = new Float32Array(sw * sh);
+    for (let i = 0; i < gs.length; i++) gs[i] = clamp(Math.pow(target / Math.max(field[i], 0.02), p.light), 0.65, 2);
+    const gain = s < 1 ? resizeBilinear(gs, sw, sh, w, h) : gs;
+    for (let i = 0; i < n; i++) { const g = gain[i]; R[i] *= g; G[i] *= g; B[i] *= g; L[i] = Y(R[i], G[i], B[i]); }
+    // 2) mild white balance from the brightest decile, capped
+    const t90 = q(L, 90, 0, 3).v;
+    let sr = 0, sg = 0, sb = 0, cnt = 0;
+    for (let i = 0; i < n; i++) if (L[i] >= t90) { sr += R[i]; sg += G[i]; sb += B[i]; cnt++; }
+    sr /= cnt; sg /= cnt; sb /= cnt;
+    const mm = (sr + sg + sb) / 3;
+    const mr = 1 + p.wb * (clamp(mm / Math.max(sr, 1e-4), 0.8, 1.25) - 1);
+    const mg = 1 + p.wb * (clamp(mm / Math.max(sg, 1e-4), 0.8, 1.25) - 1);
+    const mb = 1 + p.wb * (clamp(mm / Math.max(sb, 1e-4), 0.8, 1.25) - 1);
+    const YS = new Float32Array(n);
+    for (let i = 0; i < n; i++) { R[i] = toS(R[i] * mr); G[i] = toS(G[i] * mg); B[i] = toS(B[i] * mb); YS[i] = Y(R[i], G[i], B[i]); }
+    // 3) percentile levels + gentle S-curve, applied to luminance only
+    const lo = clamp(q(YS, 0.5, 0, 1).v, 0, 0.18), hi = clamp(q(YS, 99.5, 0, 1).v, 0.8, 1), span = hi - lo;
+    const out = new Uint8ClampedArray(n * 4);
+    for (let i = 0, j = 0; i < n; i++, j += 4) {
+      const y2 = curve(clamp((YS[i] - lo) / span, 0, 1), p.contrast), sc = Math.min(y2 / Math.max(YS[i], 1e-4), 4);
+      let r = R[i] * sc, g = G[i] * sc, b = B[i] * sc;
+      const pk = Math.max(r, g, b);
+      if (pk > 1) { r /= pk; g /= pk; b /= pk; }
+      // 4) vibrance: lift only dull colours
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b), k = 1 + p.vibrance * (1 - (mx - mn) / Math.max(mx, 1e-4));
+      const ym = Y(r, g, b);
+      out[j] = clamp(ym + (r - ym) * k, 0, 1) * 255; out[j + 1] = clamp(ym + (g - ym) * k, 0, 1) * 255;
+      out[j + 2] = clamp(ym + (b - ym) * k, 0, 1) * 255; out[j + 3] = 255;
+    }
+    return { w, h, data: out };
+  }
+
+  const FILTERS = { original, document: documentFilter, photo, grayscale, bw };
+  const norm = im => (im.w ? im : { w: im.width, h: im.height, data: im.data });
+  const apply = (name, img, params) => FILTERS[name](norm(img), params);
+
+  /** ID-1 shaped scans (cards) or an ID category default to Photo; everything else to Document. */
+  function suggest(w, h, category) {
+    const r = Math.max(w, h) / Math.max(1, Math.min(w, h));
+    return category === 'ID Cards & Licenses' || Math.abs(r - 1.586) < 0.08 ? 'photo' : 'document';
+  }
+
+  // -------------------------------------------------------------------------- geometry
+  const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  function quadSize(q4) {
+    return [Math.round(Math.max(dist(q4[0], q4[1]), dist(q4[3], q4[2]))), Math.round(Math.max(dist(q4[0], q4[3]), dist(q4[1], q4[2])))];
+  }
+
+  function solve(A) { // 8x9 augmented matrix, Gaussian elimination with pivoting
+    const n = 8;
+    for (let c = 0; c < n; c++) {
+      let p = c;
+      for (let r = c + 1; r < n; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r;
+      [A[c], A[p]] = [A[p], A[c]];
+      for (let r = c + 1; r < n; r++) { const f = A[r][c] / A[c][c]; for (let k = c; k <= n; k++) A[r][k] -= f * A[c][k]; }
+    }
+    const x = new Array(n);
+    for (let r = n - 1; r >= 0; r--) { let s = A[r][n]; for (let k = r + 1; k < n; k++) s -= A[r][k] * x[k]; x[r] = s / A[r][r]; }
+    return x;
+  }
+
+  /** Perspective-correct the quad (TL,TR,BR,BL in source pixels) into a W x H image. */
+  function warp(img, quad, W, H) {
+    img = norm(img);
+    const dst = [[0, 0], [W, 0], [W, H], [0, H]], A = [];
+    for (let k = 0; k < 4; k++) {
+      const [x, y] = dst[k], [u, v] = quad[k];
+      A.push([x, y, 1, 0, 0, 0, -u * x, -u * y, u]); A.push([0, 0, 0, x, y, 1, -v * x, -v * y, v]);
+    }
+    const m = solve(A), { w, h, data } = img, out = new Uint8ClampedArray(W * H * 4);
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const px = x + 0.5, py = y + 0.5, d = m[6] * px + m[7] * py + 1;
+        const u = (m[0] * px + m[1] * py + m[2]) / d - 0.5, v = (m[3] * px + m[4] * py + m[5]) / d - 0.5;
+        const x0 = Math.floor(u), y0 = Math.floor(v), fx = u - x0, fy = v - y0, o = (y * W + x) * 4;
+        const xa = clamp(x0, 0, w - 1), xb = clamp(x0 + 1, 0, w - 1), ya = clamp(y0, 0, h - 1), yb = clamp(y0 + 1, 0, h - 1);
+        const i00 = (ya * w + xa) * 4, i10 = (ya * w + xb) * 4, i01 = (yb * w + xa) * 4, i11 = (yb * w + xb) * 4;
+        for (let c = 0; c < 3; c++) {
+          out[o + c] = (data[i00 + c] * (1 - fx) + data[i10 + c] * fx) * (1 - fy) + (data[i01 + c] * (1 - fx) + data[i11 + c] * fx) * fy;
+        }
+        out[o + 3] = 255;
+      }
+    }
+    return { w: W, h: H, data: out };
+  }
+
+  /** Basic corner finder for capture-then-detect: Otsu split, largest blob, extreme points.
+   *  Good enough to start a scan; the corner editor is the real safety net. Returns null on failure. */
+  function detectQuad(img) {
+    img = norm(img);
+    const { w, h, data } = img, s = Math.min(1, 320 / Math.max(w, h));
+    const sw = Math.max(16, Math.round(w * s)), sh = Math.max(16, Math.round(h * s)), L = new Float32Array(w * h);
+    for (let i = 0, j = 0; i < L.length; i++, j += 4) L[i] = (0.2126 * data[j] + 0.7152 * data[j + 1] + 0.0722 * data[j + 2]) / 255;
+    let g = s < 1 ? boxDown(L, w, h, sw, sh) : L;
+    g = gaussian(g, sw, sh, 2);
+    const hist = new Uint32Array(256);
+    for (let i = 0; i < g.length; i++) hist[clamp((g[i] * 255) | 0, 0, 255)]++;
+    const t0 = otsu(hist, g.length) / 255, N = sw * sh;
+    let best = null;
+    for (const mul of [0.6, 0.8, 1, 1.2, 1.4]) {
+    const t = clamp(t0 * mul, 0.04, 0.96);
+    for (const bright of [true, false]) {
+      const mask = new Uint8Array(N);
+      for (let i = 0; i < N; i++) mask[i] = (bright ? g[i] > t : g[i] <= t) ? 1 : 0;
+      const lab = new Uint8Array(N), stack = new Int32Array(N);
+      for (let i0 = 0; i0 < N; i0++) {
+        if (!mask[i0] || lab[i0]) continue;
+        let sp = 0, cnt = 0, tl = [0, 1e9], br = [0, -1e9], tr = [0, -1e9], bl = [0, 1e9];
+        stack[sp++] = i0; lab[i0] = 1;
+        while (sp) {
+          const i = stack[--sp], x = i % sw, y = (i / sw) | 0; cnt++;
+          const a = x + y, d = x - y;
+          if (a < tl[1]) tl = [i, a]; if (a > br[1]) br = [i, a]; if (d > tr[1]) tr = [i, d]; if (d < bl[1]) bl = [i, d];
+          if (x > 0 && mask[i - 1] && !lab[i - 1]) { lab[i - 1] = 1; stack[sp++] = i - 1; }
+          if (x < sw - 1 && mask[i + 1] && !lab[i + 1]) { lab[i + 1] = 1; stack[sp++] = i + 1; }
+          if (y > 0 && mask[i - sw] && !lab[i - sw]) { lab[i - sw] = 1; stack[sp++] = i - sw; }
+          if (y < sh - 1 && mask[i + sw] && !lab[i + sw]) { lab[i + sw] = 1; stack[sp++] = i + sw; }
+        }
+        const ar = cnt / N;
+        if (ar < 0.12 || ar > 0.97) continue;
+        const pts = [tl[0], tr[0], br[0], bl[0]].map(i => [(i % sw) + 0.5, ((i / sw) | 0) + 0.5]);
+        let area = 0;
+        for (let k = 0; k < 4; k++) { const a = pts[k], b = pts[(k + 1) % 4]; area += a[0] * b[1] - b[0] * a[1]; }
+        const fill = Math.min(1, cnt / Math.max(Math.abs(area) / 2, 1)), score = fill * Math.sqrt(ar);
+        if (!best || score > best.score) best = { score, fill, pts };
+      }
+    }
+    }
+    if (!best || best.fill < 0.8) return null;
+    return { quad: best.pts.map(p => [p[0] * (w / sw), p[1] * (h / sh)]), confidence: best.fill };
+  }
+
+  return { DEFAULTS, apply, suggest, quadSize, warp, detectQuad, FILTERS };
+})();
+if (typeof module !== 'undefined') module.exports = DD;
+
+/* DocDoc page-corner detector v2 (capture-then-detect).
+ *
+ * How it works: many independent guesses, then a small trainable ranker picks one.
+ *   1. Shrink the photo and erase text with a morphological closing, so only large shapes remain.
+ *   2. Guess A: threshold three maps (brightness, distance from the border colour, whiteness),
+ *      take the big blobs, fit four straight sides to each blob's outline.
+ *   3. Guess B: find straight edges with a Hough transform and combine them into quadrilaterals.
+ *      The four image borders count as lines, so a page that runs off the frame can still be found.
+ *   4. Describe every guess with ~20 numbers (edge support, contrast, shape, agreement between guesses).
+ *   5. A linear ranker scores the guesses. Its weights can be re-fitted from a person's corrected corners.
+ *   6. Snap each side of the winner onto the strongest nearby edge at higher resolution.
+ * Pure typed-array maths: runs in a browser, a Worker, Node or a WebView.
+ */
+const DDQ = (() => {
+  'use strict';
+  const VERSION = 'ddq-2';
+  const SMALL = 320;
+  const FEATS = ['bias', 'edgeMean', 'edgeMin', 'polarity', 'area', 'areaSq', 'angles', 'parallel', 'contrastL', 'contrastD',
+    'inBright', 'inSatLow', 'inUniform', 'outDiff', 'dInOut', 'borderSides', 'centre', 'fromMask', 'agree', 'aspect', 'edgeMeanSq'];
+  // Built-in weights: fitted on synthetic desk scenes (see croptest/), replaced by on-device training when available.
+  let W0 = [0, 4.693, 3.586, 3.096, 3.044, -0.053, 2.121, 1.711, 0.538, 0.364, 1.152, 1.594, -1.278, 0.175, 1.916, -3.306, 4.937, 0.933, 2.047, 2.52, 2.193];
+
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const odd = n => { n = Math.max(3, Math.round(n)); return n % 2 ? n : n + 1; };
+
+  // ------------------------------------------------------------------ image helpers
+  function boxDownRGBA(data, w, h, nw, nh) {
+    const R = new Float32Array(nw * nh), G = new Float32Array(nw * nh), B = new Float32Array(nw * nh), sx = w / nw, sy = h / nh;
+    for (let y = 0; y < nh; y++) {
+      const y0 = Math.floor(y * sy), y1 = Math.min(h, Math.max(y0 + 1, Math.floor((y + 1) * sy)));
+      for (let x = 0; x < nw; x++) {
+        const x0 = Math.floor(x * sx), x1 = Math.min(w, Math.max(x0 + 1, Math.floor((x + 1) * sx)));
+        let r = 0, g = 0, b = 0;
+        for (let yy = y0; yy < y1; yy++) { let j = (yy * w + x0) * 4; for (let xx = x0; xx < x1; xx++, j += 4) { r += data[j]; g += data[j + 1]; b += data[j + 2]; } }
+        const k = 1 / ((y1 - y0) * (x1 - x0) * 255), o = y * nw + x; R[o] = r * k; G[o] = g * k; B[o] = b * k;
+      }
+    }
+    return [R, G, B];
+  }
+  function gaussian(src, w, h, sigma) {
+    const r = Math.max(1, Math.ceil(sigma * 3)), k = new Float32Array(2 * r + 1); let s = 0;
+    for (let i = -r; i <= r; i++) { const v = Math.exp(-(i * i) / (2 * sigma * sigma)); k[i + r] = v; s += v; }
+    for (let i = 0; i < k.length; i++) k[i] /= s;
+    const tmp = new Float32Array(w * h), out = new Float32Array(w * h);
+    for (let y = 0; y < h; y++) { const o = y * w; for (let x = 0; x < w; x++) { let a = 0; for (let i = -r; i <= r; i++) { let xx = x + i; xx = xx < 0 ? 0 : xx >= w ? w - 1 : xx; a += src[o + xx] * k[i + r]; } tmp[o + x] = a; } }
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let a = 0; for (let i = -r; i <= r; i++) { let yy = y + i; yy = yy < 0 ? 0 : yy >= h ? h - 1 : yy; a += tmp[yy * w + x] * k[i + r]; } out[y * w + x] = a; }
+    return out;
+  }
+  function morph(src, w, h, k, isMax) {
+    const r = (k - 1) >> 1, tmp = new Float32Array(w * h), out = new Float32Array(w * h);
+    for (let y = 0; y < h; y++) { const o = y * w; for (let x = 0; x < w; x++) { const lo = Math.max(0, x - r), hi = Math.min(w - 1, x + r); let m = src[o + lo]; if (isMax) { for (let i = lo + 1; i <= hi; i++) if (src[o + i] > m) m = src[o + i]; } else { for (let i = lo + 1; i <= hi; i++) if (src[o + i] < m) m = src[o + i]; } tmp[o + x] = m; } }
+    for (let x = 0; x < w; x++) for (let y = 0; y < h; y++) { const lo = Math.max(0, y - r), hi = Math.min(h - 1, y + r); let m = tmp[lo * w + x]; if (isMax) { for (let i = lo + 1; i <= hi; i++) if (tmp[i * w + x] > m) m = tmp[i * w + x]; } else { for (let i = lo + 1; i <= hi; i++) if (tmp[i * w + x] < m) m = tmp[i * w + x]; } out[y * w + x] = m; }
+    return out;
+  }
+  function sobel(src, w, h) {
+    const gx = new Float32Array(w * h), gy = new Float32Array(w * h);
+    for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+      const o = y * w + x, a = src[o - w - 1], b = src[o - w], c = src[o - w + 1], d = src[o - 1], f = src[o + 1], g = src[o + w - 1], hh = src[o + w], i = src[o + w + 1];
+      gx[o] = (c + 2 * f + i - a - 2 * d - g) * 0.25; gy[o] = (g + 2 * hh + i - a - 2 * b - c) * 0.25;
+    }
+    return [gx, gy];
+  }
+  function percentile(arr, p) {
+    let mx = 0; for (let i = 0; i < arr.length; i++) if (arr[i] > mx) mx = arr[i];
+    if (mx <= 0) return 0;
+    const B = 1024, hist = new Uint32Array(B), sc = (B - 1) / mx; for (let i = 0; i < arr.length; i++) hist[(arr[i] * sc) | 0]++;
+    const target = arr.length * p / 100; let c = 0;
+    for (let b = 0; b < B; b++) { c += hist[b]; if (c >= target) return b / sc; }
+    return mx;
+  }
+  function otsu01(arr) {
+    const hist = new Uint32Array(256); let mx = 1e-6; for (let i = 0; i < arr.length; i++) if (arr[i] > mx) mx = arr[i];
+    for (let i = 0; i < arr.length; i++) hist[clamp((arr[i] / mx * 255) | 0, 0, 255)]++;
+    let sum = 0; for (let i = 0; i < 256; i++) sum += i * hist[i];
+    let wB = 0, sB = 0, best = -1, t = 127; const total = arr.length;
+    for (let i = 0; i < 256; i++) { wB += hist[i]; if (!wB) continue; const wF = total - wB; if (!wF) break; sB += i * hist[i]; const mB = sB / wB, mF = (sum - sB) / wF, v = wB * wF * (mB - mF) * (mB - mF); if (v > best) { best = v; t = i; } }
+    return (t / 255) * mx;
+  }
+  const median = a => { const s = Float32Array.from(a).sort(); return s[s.length >> 1]; };
+
+  // -------------------------------------------------------------------- geometry
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  function orderQuad(pts) {
+    const cx = (pts[0][0] + pts[1][0] + pts[2][0] + pts[3][0]) / 4, cy = (pts[0][1] + pts[1][1] + pts[2][1] + pts[3][1]) / 4;
+    const s = pts.slice().sort((a, b) => Math.atan2(a[1] - cy, a[0] - cx) - Math.atan2(b[1] - cy, b[0] - cx));
+    let st = 0; for (let i = 1; i < 4; i++) if (s[i][0] + s[i][1] < s[st][0] + s[st][1]) st = i;
+    return [s[st], s[(st + 1) % 4], s[(st + 2) % 4], s[(st + 3) % 4]];
+  }
+  const quadArea = q => { let a = 0; for (let k = 0; k < 4; k++) { const p = q[k], n = q[(k + 1) % 4]; a += p[0] * n[1] - n[0] * p[1]; } return a / 2; };
+  function convex(q) { let s = 0; for (let k = 0; k < 4; k++) { const c = cross(q[k], q[(k + 1) % 4], q[(k + 2) % 4]); if (c === 0) return false; if (s === 0) s = Math.sign(c); else if (Math.sign(c) !== s) return false; } return true; }
+  /** Largest corner distance between two quads as a fraction of the diagonal (best cyclic alignment). */
+  function quadErr(a, b, w, h, useMean) {
+    const diag = Math.hypot(w, h); let best = Infinity;
+    for (let sft = 0; sft < 4; sft++) { let mx = 0, sum = 0; for (let k = 0; k < 4; k++) { const d = Math.hypot(a[k][0] - b[(k + sft) % 4][0], a[k][1] - b[(k + sft) % 4][1]); sum += d; if (d > mx) mx = d; } const v = useMean ? sum / 4 : mx; if (v < best) best = v; }
+    return best / diag;
+  }
+  function lineThrough(a, b) { const dx = b[0] - a[0], dy = b[1] - a[1], n = Math.hypot(dx, dy) || 1; return { p: a, d: [dx / n, dy / n] }; }
+  function intersect(l1, l2) {
+    const den = l1.d[0] * l2.d[1] - l1.d[1] * l2.d[0]; if (Math.abs(den) < 1e-6) return null;
+    const t = ((l2.p[0] - l1.p[0]) * l2.d[1] - (l2.p[1] - l1.p[1]) * l2.d[0]) / den;
+    return [l1.p[0] + t * l1.d[0], l1.p[1] + t * l1.d[1]];
+  }
+
+  // ------------------------------------------------------------------ preparation
+  function prepare(img) {
+    const w = img.w || img.width, h = img.h || img.height, data = img.data;
+    const s = Math.min(1, SMALL / Math.max(w, h)), sw = Math.max(16, Math.round(w * s)), sh = Math.max(16, Math.round(h * s)), N = sw * sh, long = Math.max(sw, sh);
+    let chs = boxDownRGBA(data, w, h, sw, sh);
+    const k = odd(0.028 * long);
+    chs = chs.map(c => gaussian(morph(morph(c, sw, sh, k, true), sw, sh, k, false), sw, sh, 1.0)); // closing erases text
+    const [R, G, B] = chs, L = new Float32Array(N), Sat = new Float32Array(N), D = new Float32Array(N), Wm = new Float32Array(N);
+    // background colour = median of the border ring
+    const ring = Math.max(2, Math.round(0.03 * long)), br = [], bg = [], bb = [];
+    for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) if (x < ring || y < ring || x >= sw - ring || y >= sh - ring) { const o = y * sw + x; br.push(R[o]); bg.push(G[o]); bb.push(B[o]); }
+    const mr = median(br), mg = median(bg), mb = median(bb);
+    // two-colour border model (striped or checked surfaces): 2-means on the ring, seeded by darkest/brightest
+    let c1 = [mr, mg, mb], c2 = [mr, mg, mb]; { let lo = 9, hi = -1; for (let i = 0; i < br.length; i++) { const l = br[i] + bg[i] + bb[i]; if (l < lo) { lo = l; c1 = [br[i], bg[i], bb[i]]; } if (l > hi) { hi = l; c2 = [br[i], bg[i], bb[i]]; } }
+      for (let it = 0; it < 6; it++) { const a = [0, 0, 0, 0], b = [0, 0, 0, 0]; for (let i = 0; i < br.length; i++) { const d1 = (br[i] - c1[0]) ** 2 + (bg[i] - c1[1]) ** 2 + (bb[i] - c1[2]) ** 2, d2 = (br[i] - c2[0]) ** 2 + (bg[i] - c2[1]) ** 2 + (bb[i] - c2[2]) ** 2, t = d1 <= d2 ? a : b; t[0] += br[i]; t[1] += bg[i]; t[2] += bb[i]; t[3]++; }
+        if (a[3]) c1 = [a[0] / a[3], a[1] / a[3], a[2] / a[3]]; if (b[3]) c2 = [b[0] / b[3], b[1] / b[3], b[2] / b[3]]; } }
+    const D2 = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      const r = R[i], g = G[i], b = B[i], mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      L[i] = 0.2126 * r + 0.7152 * g + 0.0722 * b; Sat[i] = (mx - mn) / Math.max(mx, 0.04);
+      D[i] = Math.min(1, Math.sqrt((r - mr) * (r - mr) + (g - mg) * (g - mg) + (b - mb) * (b - mb)));
+      Wm[i] = clamp(L[i] - 0.8 * Sat[i], 0, 1);
+      D2[i] = Math.min(1, Math.sqrt(Math.min((r - c1[0]) ** 2 + (g - c1[1]) ** 2 + (b - c1[2]) ** 2, (r - c2[0]) ** 2 + (g - c2[1]) ** 2 + (b - c2[2]) ** 2)));
+    }
+    const [gxL, gyL] = sobel(L, sw, sh), [gxD, gyD] = sobel(D, sw, sh), mag = new Float32Array(N), gx = new Float32Array(N), gy = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      const a = Math.hypot(gxL[i], gyL[i]), b = Math.hypot(gxD[i], gyD[i]);
+      if (a >= b) { mag[i] = a; gx[i] = gxL[i]; gy[i] = gyL[i]; } else { mag[i] = b; gx[i] = gxD[i]; gy[i] = gyD[i]; }
+    }
+    const gRef = Math.max(percentile(mag, 96), 0.012);
+    return { w, h, sw, sh, N, long, L, Sat, D, D2, Wm, gxL, gyL, gxD, gyD, gx, gy, mag, gRef };
+  }
+  const at = (f, c, x, y) => f[clamp(y | 0, 0, c.sh - 1) * c.sw + clamp(x | 0, 0, c.sw - 1)];
+
+  // -------------------------------------------------------- guess A: blobs from masks
+  function fillHoles(mask, sw, sh) {
+    const N = sw * sh, seen = new Uint8Array(N), stack = new Int32Array(N); let sp = 0;
+    const push = i => { if (!mask[i] && !seen[i]) { seen[i] = 1; stack[sp++] = i; } };
+    for (let x = 0; x < sw; x++) { push(x); push((sh - 1) * sw + x); }
+    for (let y = 0; y < sh; y++) { push(y * sw); push(y * sw + sw - 1); }
+    while (sp) { const i = stack[--sp], x = i % sw, y = (i / sw) | 0; if (x > 0) push(i - 1); if (x < sw - 1) push(i + 1); if (y > 0) push(i - sw); if (y < sh - 1) push(i + sw); }
+    for (let i = 0; i < N; i++) if (!mask[i] && !seen[i]) mask[i] = 1;
+  }
+  function binMorph(mask, sw, sh, k, isMax) { const f = Float32Array.from(mask), o = morph(f, sw, sh, k, isMax); const out = new Uint8Array(sw * sh); for (let i = 0; i < out.length; i++) out[i] = o[i] > 0.5 ? 1 : 0; return out; }
+  function hull(points) {
+    const p = points.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]); if (p.length < 3) return p;
+    const lo = []; for (const q of p) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
+    const up = []; for (let i = p.length - 1; i >= 0; i--) { const q = p[i]; while (up.length >= 2 && cross(up[up.length - 2], up[up.length - 1], q) <= 0) up.pop(); up.push(q); }
+    lo.pop(); up.pop(); return lo.concat(up);
+  }
+  function maxAreaQuad(hp) {
+    let pts = hp.slice();
+    while (pts.length > 26) { // drop the vertex that changes the outline least
+      let bi = 0, ba = Infinity; const n = pts.length;
+      for (let i = 0; i < n; i++) { const a = Math.abs(cross(pts[(i + n - 1) % n], pts[i], pts[(i + 1) % n])); if (a < ba) { ba = a; bi = i; } }
+      pts.splice(bi, 1);
+    }
+    const n = pts.length; if (n < 4) return null; let best = 0, bq = null;
+    for (let i = 0; i < n - 3; i++) for (let j = i + 1; j < n - 2; j++) for (let k = j + 1; k < n - 1; k++) for (let l = k + 1; l < n; l++) {
+      const a = Math.abs(cross(pts[i], pts[j], pts[k])) + Math.abs(cross(pts[i], pts[k], pts[l]));
+      if (a > best) { best = a; bq = [pts[i], pts[j], pts[k], pts[l]]; }
+    }
+    return bq;
+  }
+  function fitSides(q, boundary, long) {
+    const tol = Math.max(2, 0.012 * long), lines = [];
+    for (let s = 0; s < 4; s++) {
+      const a = q[s], b = q[(s + 1) % 4], dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len;
+      let sel = [];
+      for (const p of boundary) { const t = ((p[0] - a[0]) * ux + (p[1] - a[1]) * uy) / len; if (t < 0.08 || t > 0.92) continue; const d = Math.abs((p[0] - a[0]) * uy - (p[1] - a[1]) * ux); if (d < tol) sel.push(p); }
+      let line = lineThrough(a, b);
+      for (let pass = 0; pass < 2 && sel.length >= 0.35 * len; pass++) {
+        let mx = 0, my = 0; for (const p of sel) { mx += p[0]; my += p[1]; } mx /= sel.length; my /= sel.length;
+        let sxx = 0, sxy = 0, syy = 0; for (const p of sel) { const x = p[0] - mx, y = p[1] - my; sxx += x * x; sxy += x * y; syy += y * y; }
+        const th = 0.5 * Math.atan2(2 * sxy, sxx - syy); line = { p: [mx, my], d: [Math.cos(th), Math.sin(th)] };
+        sel = sel.filter(p => Math.abs((p[0] - mx) * line.d[1] - (p[1] - my) * line.d[0]) < 1.3);
+      }
+      lines.push(line);
+    }
+    const out = [];
+    for (let s = 0; s < 4; s++) { const c = intersect(lines[(s + 3) % 4], lines[s]); out.push(c && Math.hypot(c[0] - q[s][0], c[1] - q[s][1]) < 0.15 * long ? c : q[s]); }
+    return out;
+  }
+  function maskCandidates(c) {
+    const { sw, sh, N, long } = c, out = [], kOpen = odd(0.022 * long);
+    for (const [map, mi] of [[c.L, 0], [c.D, 1], [c.Wm, 2], [c.D2, 3]]) {
+      const t0 = otsu01(map);
+      for (const mul of [0.75, 1, 1.25]) {
+        const t = t0 * mul; let mask = new Uint8Array(N); let on = 0;
+        for (let i = 0; i < N; i++) if (map[i] > t) { mask[i] = 1; on++; }
+        if (on < 0.03 * N) continue;
+        fillHoles(mask, sw, sh); mask = binMorph(binMorph(mask, sw, sh, kOpen, false), sw, sh, kOpen, true);
+        const lab = new Uint8Array(N), stack = new Int32Array(N), comps = [];
+        for (let i0 = 0; i0 < N; i0++) {
+          if (!mask[i0] || lab[i0]) continue; let sp = 0; const px = []; stack[sp++] = i0; lab[i0] = 1;
+          while (sp) { const i = stack[--sp], x = i % sw, y = (i / sw) | 0; px.push(i);
+            if (x > 0 && mask[i - 1] && !lab[i - 1]) { lab[i - 1] = 1; stack[sp++] = i - 1; } if (x < sw - 1 && mask[i + 1] && !lab[i + 1]) { lab[i + 1] = 1; stack[sp++] = i + 1; }
+            if (y > 0 && mask[i - sw] && !lab[i - sw]) { lab[i - sw] = 1; stack[sp++] = i - sw; } if (y < sh - 1 && mask[i + sw] && !lab[i + sw]) { lab[i + sw] = 1; stack[sp++] = i + sw; } }
+          if (px.length >= 0.035 * N && px.length <= 0.985 * N) comps.push(px);
+        }
+        comps.sort((a, b) => b.length - a.length);
+        for (const px of comps.slice(0, 3)) {
+          const inC = new Uint8Array(N); for (const i of px) inC[i] = 1; const boundary = [];
+          for (const i of px) { const x = i % sw, y = (i / sw) | 0; if (x === 0 || y === 0 || x === sw - 1 || y === sh - 1 || !inC[i - 1] || !inC[i + 1] || !inC[i - sw] || !inC[i + sw]) boundary.push([x + 0.5, y + 0.5]); }
+          const q0 = maxAreaQuad(hull(boundary)); if (!q0) continue;
+          const q = orderQuad(fitSides(orderQuad(q0), boundary, long));
+          if (convex(q)) out.push({ q, src: 1, map: mi });
+        }
+      }
+    }
+    return out;
+  }
+
+  // ------------------------------------------------------ guess B: straight edges (Hough)
+  function houghLines(c) {
+    const { sw, sh, N, mag, gx, gy, gRef } = c, TH = 180, diag = Math.ceil(Math.hypot(sw, sh)), RH = 2 * diag + 1, acc = new Float32Array(TH * RH);
+    const cosT = new Float32Array(TH), sinT = new Float32Array(TH); for (let t = 0; t < TH; t++) { cosT[t] = Math.cos(t * Math.PI / TH); sinT[t] = Math.sin(t * Math.PI / TH); }
+    const thr = Math.max(0.35 * gRef, percentile(mag, 86));
+    for (let y = 1; y < sh - 1; y++) for (let x = 1; x < sw - 1; x++) {
+      const i = y * sw + x, m = mag[i]; if (m < thr) continue;
+      let t0 = Math.round(Math.atan2(gy[i], gx[i]) * TH / Math.PI); const wgt = Math.min(m / gRef, 1.5);
+      for (let dt = -4; dt <= 4; dt++) { let t = ((t0 + dt) % TH + TH) % TH; const rho = Math.round(x * cosT[t] + y * sinT[t]) + diag; acc[t * RH + rho] += wgt * (1 - Math.abs(dt) * 0.15); }
+    }
+    const lines = [], taken = [];
+    const cells = []; for (let i = 0; i < acc.length; i++) if (acc[i] > 6) cells.push(i);
+    cells.sort((a, b) => acc[b] - acc[a]);
+    for (const i of cells) {
+      if (lines.length >= 20) break; const t = (i / RH) | 0, r = (i % RH) - diag; let ok = true;
+      for (const [tt, rr] of taken) { let dth = Math.abs(t - tt), dr = Math.abs(r - rr); if (dth > TH / 2) { dth = TH - dth; dr = Math.abs(r + rr); } if (dth <= 7 && dr <= 10) { ok = false; break; } }
+      if (!ok) continue; taken.push([t, r]);
+      const th = t * Math.PI / TH; lines.push({ p: [r * Math.cos(th), r * Math.sin(th)], d: [-Math.sin(th), Math.cos(th)], th, votes: acc[i], border: 0 });
+    }
+    lines.push({ p: [0.5, 0], d: [0, 1], th: 0, votes: 0, border: 1 }, { p: [sw - 0.5, 0], d: [0, 1], th: 0, votes: 0, border: 1 },
+      { p: [0, 0.5], d: [1, 0], th: Math.PI / 2, votes: 0, border: 1 }, { p: [0, sh - 0.5], d: [1, 0], th: Math.PI / 2, votes: 0, border: 1 });
+    return lines;
+  }
+  function sideSupport(c, a, b, n) { // fraction of the side lying on a real edge, plus signed polarity
+    const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len; let hit = 0, pol = 0, cnt = 0;
+    for (let k = 0; k < n; k++) {
+      const t = 0.05 + 0.9 * (k + 0.5) / n, x = a[0] + dx * t, y = a[1] + dy * t; if (x < 1 || y < 1 || x > c.sw - 2 || y > c.sh - 2) { cnt++; continue; }
+      const eL = at(c.gxL, c, x, y) * nx + at(c.gyL, c, x, y) * ny, eD = at(c.gxD, c, x, y) * nx + at(c.gyD, c, x, y) * ny, e = Math.max(Math.abs(eL), Math.abs(eD));
+      hit += Math.min(1, e / (0.55 * c.gRef)); pol += Math.sign(eL) * (Math.abs(eL) > 0.2 * c.gRef ? 1 : 0); cnt++;
+    }
+    return [hit / cnt, pol / cnt];
+  }
+  function lineCandidates(c, maskCands) {
+    const { sw, sh } = c, lines = houghLines(c), pairs = [], cx = sw / 2, cy = sh / 2, minSep = 0.12 * Math.min(sw, sh), out = [];
+    const angDiff = (a, b) => { let d = Math.abs(a - b) % Math.PI; return d > Math.PI / 2 ? Math.PI - d : d; };
+    const offs = l => (cx - l.p[0]) * l.d[1] - (cy - l.p[1]) * l.d[0];
+    let extra = 0; // sides of blob guesses join the pool, so a good side can pair with edges the blob missed
+    for (const m of maskCands || []) for (let s = 0; s < 4 && extra < 16; s++) {
+      const l = lineThrough(m.q[s], m.q[(s + 1) % 4]); l.th = Math.atan2(l.d[0], -l.d[1]); l.border = 0; l.votes = 0;
+      if (lines.some(o => angDiff(o.th, l.th) < 0.05 && Math.abs(Math.abs(offs(o)) - Math.abs(offs(l))) < 3)) continue;
+      lines.push(l); extra++;
+    }
+    for (let i = 0; i < lines.length; i++) for (let j = i + 1; j < lines.length; j++) {
+      const a = lines[i], b = lines[j]; if (angDiff(a.th, b.th) > 0.52) continue;
+      const sgn = a.d[0] * b.d[0] + a.d[1] * b.d[1] >= 0 ? 1 : -1; if (Math.abs(offs(a) - sgn * offs(b)) < minSep) continue;
+      pairs.push([a, b]);
+    }
+    const inB = p => p && p[0] > -0.05 * sw && p[0] < 1.05 * sw && p[1] > -0.05 * sh && p[1] < 1.05 * sh;
+    for (let i = 0; i < pairs.length; i++) for (let j = i + 1; j < pairs.length; j++) {
+      const [a1, a2] = pairs[i], [b1, b2] = pairs[j]; if (a1 === b1 || a1 === b2 || a2 === b1 || a2 === b2) continue;
+      if (angDiff((a1.th + a2.th) / 2, (b1.th + b2.th) / 2) < 0.85 && angDiff(a1.th, b1.th) < 0.85) continue;
+      if (a1.border + a2.border + b1.border + b2.border > 2) continue;
+      const p = [intersect(a1, b1), intersect(a1, b2), intersect(a2, b2), intersect(a2, b1)]; if (!p.every(inB)) continue;
+      const q = orderQuad(p.map(v => [clamp(v[0], 0, sw), clamp(v[1], 0, sh)])); if (!convex(q)) continue;
+      const ar = Math.abs(quadArea(q)) / (sw * sh); if (ar < 0.05 || ar > 0.985) continue;
+      let sup = 0, mn = 1; for (let s = 0; s < 4; s++) { const v = sideSupport(c, q[s], q[(s + 1) % 4], 16)[0]; sup += v; if (v < mn) mn = v; }
+      out.push({ q, src: 0, quick: sup / 4 + 0.5 * mn + 0.15 * Math.sqrt(ar) });
+    }
+    out.sort((a, b) => b.quick - a.quick);
+    return out.slice(0, 60);
+  }
+
+  // -------------------------------------------------------------------- features
+  function features(c, cand) {
+    const { sw, sh } = c, q = cand.q, f = new Float32Array(FEATS.length), min = Math.min(sw, sh);
+    let eSum = 0, eMin = 1, pol = 0, cL = 0, cD = 0, cN = 0, border = 0; const lens = [];
+    const cen = [(q[0][0] + q[1][0] + q[2][0] + q[3][0]) / 4, (q[0][1] + q[1][1] + q[2][1] + q[3][1]) / 4], band = 0.03 * min;
+    for (let s = 0; s < 4; s++) {
+      const a = q[s], b = q[(s + 1) % 4], dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1; lens.push(len);
+      const onBorder = (a[0] < 0.015 * sw && b[0] < 0.015 * sw) || (a[0] > 0.985 * sw && b[0] > 0.985 * sw) || (a[1] < 0.015 * sh && b[1] < 0.015 * sh) || (a[1] > 0.985 * sh && b[1] > 0.985 * sh);
+      if (onBorder) { border++; eSum += 0.45; if (0.45 < eMin) eMin = 0.45; continue; } // unknown edge: neutral credit
+      const [sup, p] = sideSupport(c, a, b, 28); eSum += sup; if (sup < eMin) eMin = sup;
+      let nx = -dy / len, ny = dx / len; const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2; if ((cen[0] - mx) * nx + (cen[1] - my) * ny < 0) { nx = -nx; ny = -ny; }
+      // p was measured along +normal of (a->b); convert so that positive = inside brighter
+      const sgn = ((-dy / len) * nx + (dx / len) * ny) >= 0 ? 1 : -1; pol += p * sgn;
+      let dl = 0, dd = 0, n = 0;
+      for (let k = 0; k < 10; k++) { const t = 0.1 + 0.8 * (k + 0.5) / 10, x = a[0] + dx * t, y = a[1] + dy * t, xi = x + nx * band, yi = y + ny * band, xo = x - nx * band, yo = y - ny * band;
+        if (xo < 0 || yo < 0 || xo > sw - 1 || yo > sh - 1) continue; dl += at(c.L, c, xi, yi) - at(c.L, c, xo, yo); dd += at(c.D, c, xi, yi) - at(c.D, c, xo, yo); n++; }
+      if (n) { cL += Math.abs(dl / n); cD += Math.abs(dd / n); cN++; }
+    }
+    const nb = 4 - border;
+    let li = 0, si = 0, l2 = 0, di = 0, ni = 0;
+    for (let u = 0; u < 9; u++) for (let v = 0; v < 9; v++) {
+      const a = 0.1 + 0.8 * u / 8, b = 0.1 + 0.8 * v / 8, x = (q[0][0] * (1 - a) + q[1][0] * a) * (1 - b) + (q[3][0] * (1 - a) + q[2][0] * a) * b, y = (q[0][1] * (1 - a) + q[1][1] * a) * (1 - b) + (q[3][1] * (1 - a) + q[2][1] * a) * b;
+      const l = at(c.L, c, x, y); li += l; l2 += l * l; si += at(c.Sat, c, x, y); di += at(c.D, c, x, y); ni++;
+    }
+    li /= ni; si /= ni; di /= ni; const sd = Math.sqrt(Math.max(0, l2 / ni - li * li));
+    let lo = 0, dO = 0, no = 0;
+    for (let s = 0; s < 4; s++) for (let k = 0; k < 8; k++) { const t = (k + 0.5) / 8, x0 = q[s][0] + (q[(s + 1) % 4][0] - q[s][0]) * t, y0 = q[s][1] + (q[(s + 1) % 4][1] - q[s][1]) * t, x = cen[0] + (x0 - cen[0]) * 1.14, y = cen[1] + (y0 - cen[1]) * 1.14;
+      if (x < 0 || y < 0 || x > sw - 1 || y > sh - 1) continue; lo += at(c.L, c, x, y); dO += at(c.D, c, x, y); no++; }
+    if (no) { lo /= no; dO /= no; } else { lo = li; dO = di; }
+    let ang = 0; for (let s = 0; s < 4; s++) { const p = q[(s + 3) % 4], o = q[s], n = q[(s + 1) % 4], ax = p[0] - o[0], ay = p[1] - o[1], bx = n[0] - o[0], by = n[1] - o[1]; ang += 1 - Math.abs((ax * bx + ay * by) / ((Math.hypot(ax, ay) || 1) * (Math.hypot(bx, by) || 1))); }
+    const par = (Math.min(lens[0], lens[2]) / Math.max(lens[0], lens[2])) * (Math.min(lens[1], lens[3]) / Math.max(lens[1], lens[3]));
+    const sA = (lens[0] + lens[2]) / 2, sB = (lens[1] + lens[3]) / 2, ratio = Math.max(sA, sB) / Math.max(1, Math.min(sA, sB)); let asp = 0;
+    for (const r of [1.414, 1.294, 1.586]) asp = Math.max(asp, Math.exp(-(((ratio - r) / 0.12) ** 2)));
+    const area = Math.abs(quadArea(q)) / (sw * sh); let inside = true; for (let s = 0; s < 4; s++) if (cross(q[s], q[(s + 1) % 4], [sw / 2, sh / 2]) * Math.sign(quadArea(q)) < 0) inside = false;
+    const eMean = eSum / 4;
+    f[0] = 1; f[1] = eMean; f[2] = eMin; f[3] = nb ? Math.abs(pol / nb) : 0; f[4] = area; f[5] = area * area; f[6] = ang / 4; f[7] = par;
+    f[8] = cN ? Math.min(1, (cL / cN) / 0.3) : 0; f[9] = cN ? Math.min(1, (cD / cN) / 0.3) : 0; f[10] = li; f[11] = 1 - si; f[12] = 1 - Math.min(1, sd / 0.2);
+    f[13] = Math.min(1, Math.abs(li - lo) / 0.3); f[14] = clamp((di - dO) / 0.3, -1, 1); f[15] = border / 4; f[16] = inside ? 1 : 0; f[17] = cand.src; f[18] = 0; f[19] = asp; f[20] = eMean * eMean;
+    return f;
+  }
+  const score = (f, w) => { let s = 0; for (let i = 0; i < f.length; i++) s += f[i] * w[i]; return s; };
+
+  /** All guesses for one photo, described and de-duplicated. Quads are in small-image pixels. */
+  function candidates(c) {
+    const mc = maskCandidates(c), raw = mc.concat(lineCandidates(c, mc)), tol = 0.02, out = [];
+    for (const cand of raw) {
+      let found = null; for (const o of out) if (quadErr(o.q, cand.q, c.sw, c.sh) < tol) { found = o; break; }
+      if (found) { found.n++; if (cand.src === 1 && found.src === 0) { found.q = cand.q; found.src = 1; } } else out.push({ q: cand.q, src: cand.src, n: 1 });
+    }
+    for (const o of out) { o.f = features(c, o); o.f[18] = Math.min(o.n - 1, 6) / 6; }
+    return out;
+  }
+
+  // ------------------------------------------------- snap sides onto edges at full size
+  function refine(img, quad) {
+    const w = img.w || img.width, h = img.h || img.height, data = img.data, N = w * h, L0 = new Float32Array(N);
+    for (let i = 0, j = 0; i < N; i++, j += 4) L0[i] = (0.2126 * data[j] + 0.7152 * data[j + 1] + 0.0722 * data[j + 2]) / 255;
+    const L = gaussian(L0, w, h, Math.max(1, 0.0016 * Math.max(w, h))), [gx, gy] = sobel(L, w, h), R = Math.round(0.014 * Math.max(w, h)) + 2, M = 44;
+    const cen = [(quad[0][0] + quad[1][0] + quad[2][0] + quad[3][0]) / 4, (quad[0][1] + quad[1][1] + quad[2][1] + quad[3][1]) / 4], lines = [];
+    const g = (f, x, y) => f[clamp(Math.round(y), 0, h - 1) * w + clamp(Math.round(x), 0, w - 1)];
+    for (let s = 0; s < 4; s++) {
+      const a = quad[s], b = quad[(s + 1) % 4], dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1; let nx = -dy / len, ny = dx / len;
+      if ((cen[0] - (a[0] + b[0]) / 2) * nx + (cen[1] - (a[1] + b[1]) / 2) * ny < 0) { nx = -nx; ny = -ny; } // normal points inside
+      const onBorder = (a[0] < 0.012 * w && b[0] < 0.012 * w) || (a[0] > 0.988 * w && b[0] > 0.988 * w) || (a[1] < 0.012 * h && b[1] < 0.012 * h) || (a[1] > 0.988 * h && b[1] > 0.988 * h);
+      if (onBorder) { lines.push(lineThrough(a, b)); continue; }
+      let di = 0, cnt = 0; // which side is brighter, measured in wide bands
+      for (let k = 0; k < 16; k++) { const t = 0.1 + 0.8 * (k + 0.5) / 16, x = a[0] + dx * t, y = a[1] + dy * t, o = R + 4; if (x - nx * o < 0 || y - ny * o < 0 || x - nx * o > w - 1 || y - ny * o > h - 1) continue; di += g(L, x + nx * o, y + ny * o) - g(L, x - nx * o, y - ny * o); cnt++; }
+      const want = cnt && Math.abs(di / cnt) > 0.025 ? Math.sign(di) : 0;
+      let best = -Infinity, bda = 0, bdb = 0, base = 0;
+      for (let da = -R; da <= R; da++) for (let db = -R; db <= R; db++) {
+        const ax = a[0] + nx * da, ay = a[1] + ny * da, ex = b[0] + nx * db - ax, ey = b[1] + ny * db - ay; let sum = 0;
+        for (let k = 0; k < M; k++) { const t = 0.06 + 0.88 * (k + 0.5) / M, x = ax + ex * t, y = ay + ey * t; sum += g(gx, x, y) * nx + g(gy, x, y) * ny; }
+        const v = (want ? sum * want : Math.abs(sum)) / M - 0.0006 * (Math.abs(da) + Math.abs(db)); if (da === 0 && db === 0) base = v; if (v > best) { best = v; bda = da; bdb = db; }
+      }
+      if (best < base * 1.12 + 0.002) { bda = 0; bdb = 0; }
+      lines.push(lineThrough([a[0] + nx * bda, a[1] + ny * bda], [b[0] + nx * bdb, b[1] + ny * bdb]));
+    }
+    const out = []; for (let s = 0; s < 4; s++) { const p = intersect(lines[(s + 3) % 4], lines[s]); out.push(p && Math.hypot(p[0] - quad[s][0], p[1] - quad[s][1]) < 3 * R ? [clamp(p[0], 0, w), clamp(p[1], 0, h)] : quad[s]); }
+    return out;
+  }
+
+  // ------------------------------------------------------------------- public API
+  /** Find the page. Returns { quad|null (TL,TR,BR,BL in image pixels), confidence 0-1, cands, version }.
+   *  cands = every guess as { q: 8 numbers normalised 0-1, f: feature vector } for on-device training. */
+  function detect(img, weights, opts) {
+    const w = weights || W0, c = prepare(img), list = candidates(c), kx = c.w / c.sw, ky = c.h / c.sh;
+    const cands = list.map(o => ({ q: o.q.flat().map((v, i) => +(v / (i % 2 ? c.sh : c.sw)).toFixed(4)), f: Array.from(o.f, v => +v.toFixed(4)) }));
+    if (!list.length) return { quad: null, confidence: 0, cands, version: VERSION };
+    let bi = 0, bs = -Infinity, second = -Infinity;
+    list.forEach((o, i) => { const s = score(o.f, w); if (s > bs) { second = bs; bs = s; bi = i; } else if (s > second) second = s; });
+    const top = list[bi], conf = clamp(0.55 * top.f[1] + 0.25 * top.f[2] + 0.2 * top.f[18], 0, 1);
+    if (top.f[1] < 0.3 && top.f[18] < 0.17) return { quad: null, confidence: conf, cands, version: VERSION, pick: bi };
+    let quad = top.q.map(p => [p[0] * kx, p[1] * ky]);
+    if (!(opts && opts.noRefine)) quad = orderQuad(refine(img, quad));
+    return { quad, confidence: conf, cands, version: VERSION, pick: bi };
+  }
+
+  /** Fit ranker weights from labelled photos. samples = [{ cands:[{q,f}], truth:[8 numbers 0-1], w, h }].
+   *  Minimises the expected corner error of the chosen guess, pulled gently toward the starting weights. */
+  function train(samples, start, opts) {
+    const w0 = (start || W0).slice(), o = Object.assign({ iters: 400, lr: 0.05, l2: 0.02, T: 1 }, opts), n = w0.length, w = w0.slice(), m = new Float64Array(n), v = new Float64Array(n);
+    const data = samples.map(s => ({ F: s.cands.map(cd => cd.f), E: s.cands.map(cd => Math.min(0.25, candErr(cd.q, s.truth, s.w, s.h, true))) })).filter(d => d.F.length > 1);
+    for (let it = 1; it <= o.iters; it++) {
+      const grad = new Float64Array(n);
+      for (const d of data) {
+        const sc = d.F.map(f => score(f, w) / o.T), mx = Math.max(...sc), ex = sc.map(x => Math.exp(x - mx)), Z = ex.reduce((a, b) => a + b, 0), p = ex.map(x => x / Z);
+        let E = 0; for (let j = 0; j < p.length; j++) E += p[j] * d.E[j];
+        for (let j = 0; j < p.length; j++) { const gcoef = p[j] * (d.E[j] - E) / o.T; for (let k = 0; k < n; k++) grad[k] += gcoef * d.F[j][k]; }
+      }
+      for (let k = 0; k < n; k++) {
+        const gk = grad[k] / Math.max(1, data.length) * 20 + o.l2 * (w[k] - w0[k]);
+        m[k] = 0.9 * m[k] + 0.1 * gk; v[k] = 0.999 * v[k] + 0.001 * gk * gk;
+        w[k] -= o.lr * (m[k] / (1 - Math.pow(0.9, it))) / (Math.sqrt(v[k] / (1 - Math.pow(0.999, it))) + 1e-8);
+      }
+    }
+    return w;
+  }
+  function candErr(q8, truth8, w, h, useMean) {
+    const a = [], b = []; for (let k = 0; k < 4; k++) { a.push([q8[2 * k] * w, q8[2 * k + 1] * h]); b.push([truth8[2 * k] * w, truth8[2 * k + 1] * h]); }
+    return quadErr(a, b, w, h, useMean);
+  }
+  /** How well a set of weights picks, measured on stored guesses (before edge snapping).
+   *  Returns { n, hit: share picked within tol, reachable: share where any guess is within tol, medianErr }. */
+  function evaluate(samples, weights, tol) {
+    const w = weights || W0; tol = tol || 0.025; let hit = 0, reach = 0; const errs = [];
+    for (const s of samples) {
+      if (!s.cands.length) { errs.push(1); continue; }
+      let bi = 0, bs = -Infinity, bestE = Infinity; s.cands.forEach((cd, i) => { const sc = score(cd.f, w); if (sc > bs) { bs = sc; bi = i; } const e = candErr(cd.q, s.truth, s.w, s.h); if (e < bestE) bestE = e; });
+      const e = candErr(s.cands[bi].q, s.truth, s.w, s.h); errs.push(e); if (e <= tol) hit++; if (bestE <= tol) reach++;
+    }
+    errs.sort((a, b) => a - b); const n = samples.length;
+    return { n, hit: n ? hit / n : 0, reachable: n ? reach / n : 0, medianErr: n ? errs[n >> 1] : 0 };
+  }
+  /** Honest estimate for small sets: train on k-1 folds, test on the held-out fold. */
+  function crossValidate(samples, start, k) {
+    k = Math.min(k || 5, samples.length); let hit = 0;
+    for (let f = 0; f < k; f++) { const tr = samples.filter((_, i) => i % k !== f), te = samples.filter((_, i) => i % k === f); const w = train(tr, start, { iters: 200 }); hit += evaluate(te, w).hit * te.length; }
+    return hit / samples.length;
+  }
+  return { VERSION, FEATS, get W0() { return W0.slice(); }, setDefaults(w) { W0 = w.slice(); }, detect, train, evaluate, crossValidate, quadErr, candErr, orderQuad, refine, prepare, candidates };
+})();
+if (typeof module !== 'undefined') module.exports = DDQ;
+
+</script>
+<script>
+/* DocDoc Lab v2: capture/import -> corner check (trains auto-crop) -> filter lab -> labelled dataset. All local. */
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const MAX_SRC = 2400, RAW_MAX = 1600, DET_MAX = 720, PREV = 1100, ID1 = 1.586, TOL = 0.025;
+  const LABELS = { original: 'Original', document: 'Document', photo: 'Photo', grayscale: 'Grayscale', bw: 'B&W' };
+  const SLIDERS = {
+    original: [],
+    document: [['contrast', 'Contrast', 0, 1, 0.01], ['sharpen', 'Sharpen', 0, 1.5, 0.01]],
+    photo: [['light', 'Light fix', 0, 1, 0.01], ['wb', 'White balance', 0, 1, 0.01], ['contrast', 'Contrast', 0, 1, 0.01], ['vibrance', 'Vibrance', 0, 0.3, 0.01]],
+    grayscale: [['contrast', 'Contrast', 0, 1, 0.01], ['sharpen', 'Sharpen', 0, 1.5, 0.01]],
+    bw: [['softness', 'Edge softness', 0.02, 0.2, 0.005], ['bias', 'Threshold bias', -0.15, 0.15, 0.005]],
+  };
+  const RATINGS = [['1', 'Unusable'], ['2', 'Poor'], ['3', 'OK'], ['4', 'Good'], ['5', 'Scanner-grade']];
+  const TAGS = ['shadow left', 'too bright', 'too dark', 'colour off', 'text faded', 'jagged edges', 'halo', 'noisy', 'wrong filter for this document'];
+  const CROP_RATINGS = [['1', 'Missed'], ['2', 'Wrong'], ['3', 'Rough'], ['4', 'Close'], ['5', 'Perfect']];
+  const CROP_TAGS = ['shadow', 'low contrast with surface', 'busy background', 'page touches photo edge', 'curled or folded', 'glare', 'other objects', 'hand in frame', 'picked something inside the page'];
+
+  // ------------------------------------------------------------------------- tiny helpers
+  let toastTimer = 0;
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
+  }
+  function showError(title, text) { $('errTitle').textContent = title; $('errText').textContent = text; $('err').hidden = false; }
+  $('btnErrOk').onclick = () => { $('err').hidden = true; };
+  const tick = () => new Promise(r => setTimeout(r, 24));
+  const uid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  const fmtDate = ts => new Date(ts).toLocaleString(undefined, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const blobOf = (c, q) => new Promise(res => c.toBlob(res, 'image/jpeg', q));
+  const pct = v => (100 * v).toFixed(0) + '%';
+  function show(view) { for (const v of ['vHome', 'vCam', 'vCrop', 'vLab']) $(v).hidden = v !== view; window.scrollTo(0, 0); }
+  function release(c) { if (c) { c.width = 0; c.height = 0; } }
+  function toCanvas(img) {
+    const c = document.createElement('canvas'); c.width = img.w; c.height = img.h;
+    c.getContext('2d').putImageData(new ImageData(img.data, img.w, img.h), 0, 0);
+    return c;
+  }
+  function fromCanvas(c) {
+    const x = c.getContext('2d', { willReadFrequently: true });
+    return { w: c.width, h: c.height, data: x.getImageData(0, 0, c.width, c.height).data };
+  }
+  function downscale(img, maxSide) {
+    const s = Math.min(1, maxSide / Math.max(img.w, img.h));
+    if (s >= 1) return img;
+    const c = document.createElement('canvas'); c.width = Math.round(img.w * s); c.height = Math.round(img.h * s);
+    const x = c.getContext('2d', { willReadFrequently: true }); x.imageSmoothingQuality = 'high';
+    const src = toCanvas(img); x.drawImage(src, 0, 0, c.width, c.height); release(src);
+    const out = fromCanvas(c); release(c); return out;
+  }
+
+  /** Read width, height and EXIF orientation from the file header, so a large photo can be decoded small. */
+  async function sniff(blob) {
+    try {
+      const b = new Uint8Array(await blob.slice(0, 262144).arrayBuffer()), u16 = (o, le) => (le ? b[o] | (b[o + 1] << 8) : (b[o] << 8) | b[o + 1]);
+      if (b[0] === 0x89 && b[1] === 0x50) return { w: (b[16] << 24 | b[17] << 16 | b[18] << 8 | b[19]) >>> 0, h: (b[20] << 24 | b[21] << 16 | b[22] << 8 | b[23]) >>> 0, orient: 1 };
+      if (b[0] !== 0xff || b[1] !== 0xd8) return null;
+      let off = 2, orient = 1;
+      while (off + 9 < b.length) {
+        if (b[off] !== 0xff) break; const m = b[off + 1], len = u16(off + 2);
+        if (m === 0xe1 && b[off + 4] === 0x45 && b[off + 5] === 0x78) { // Exif
+          const t = off + 10, le = b[t] === 0x49, ifd = t + (le ? b[t + 4] | (b[t + 5] << 8) : (b[t + 6] << 8) | b[t + 7]), n = u16(ifd, le);
+          for (let i = 0; i < n && ifd + 14 + i * 12 < b.length; i++) { const e = ifd + 2 + i * 12; if (u16(e, le) === 0x0112) orient = u16(e + 8, le); }
+        }
+        if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) return { h: u16(off + 5), w: u16(off + 7), orient };
+        off += 2 + len;
+      }
+    } catch (e) { /* fall through */ }
+    return null;
+  }
+  /** Decode a photo to at most maxSide pixels without ever holding the full-size bitmap when the browser allows it. */
+  async function decode(blob, maxSide) {
+    let bmp = null;
+    const info = await sniff(blob);
+    if (info && info.w && info.h && Math.max(info.w, info.h) > maxSide) {
+      const swap = info.orient >= 5 && info.orient <= 8, ow = swap ? info.h : info.w, oh = swap ? info.w : info.h, s = maxSide / Math.max(ow, oh);
+      const tw = Math.max(1, Math.round(ow * s)), th = Math.max(1, Math.round(oh * s));
+      try {
+        bmp = await createImageBitmap(blob, { imageOrientation: 'from-image', resizeWidth: tw, resizeHeight: th, resizeQuality: 'high' });
+        if (Math.abs(bmp.width / bmp.height - tw / th) > 0.03) { bmp.close(); bmp = null; }
+      } catch (e) { bmp = null; }
+    }
+    if (!bmp) { try { bmp = await createImageBitmap(blob, { imageOrientation: 'from-image' }); } catch (e) { bmp = null; } }
+    if (!bmp) { try { bmp = await createImageBitmap(blob); } catch (e) { bmp = null; } }
+    let src = bmp, sw = bmp && bmp.width, sh = bmp && bmp.height, url = null;
+    if (!bmp) { // last resort: an <img> element
+      url = URL.createObjectURL(blob); const im = new Image(); im.src = url; await im.decode(); src = im; sw = im.naturalWidth; sh = im.naturalHeight;
+    }
+    const s = Math.min(1, maxSide / Math.max(sw, sh)), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(sw * s)); c.height = Math.max(1, Math.round(sh * s));
+    const x = c.getContext('2d', { willReadFrequently: true }); x.imageSmoothingQuality = 'high'; x.drawImage(src, 0, 0, c.width, c.height);
+    if (bmp && bmp.close) bmp.close(); if (url) URL.revokeObjectURL(url);
+    const out = fromCanvas(c); release(c); return out;
+  }
+
+  // ----------------------------------------------------------------------------- storage
+  const STORES = ['sources', 'labels', 'inbox', 'kv'];
+  const Store = (() => {
+    let db = null; const mem = {}; for (const s of STORES) mem[s] = new Map();
+    const ready = (async () => {
+      try {
+        db = await new Promise((res, rej) => {
+          const r = indexedDB.open('docdoc-lab', 2);
+          r.onupgradeneeded = () => { for (const s of STORES) if (!r.result.objectStoreNames.contains(s)) r.result.createObjectStore(s, { keyPath: 'id' }); };
+          r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+        });
+      } catch (e) { db = null; }
+    })();
+    const run = (store, mode, fn) => new Promise((res, rej) => {
+      const tx = db.transaction(store, mode), req = fn(tx.objectStore(store));
+      tx.oncomplete = () => res(req && req.result); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error);
+    });
+    return {
+      async persistent() { await ready; return !!db; },
+      async put(store, obj) { await ready; if (!db) { mem[store].set(obj.id, obj); return; } await run(store, 'readwrite', s => s.put(obj)); },
+      async all(store) { await ready; if (!db) return [...mem[store].values()]; return (await run(store, 'readonly', s => s.getAll())) || []; },
+      async get(store, id) { await ready; if (!db) return mem[store].get(id); return run(store, 'readonly', s => s.get(id)); },
+      async del(store, id) { await ready; if (!db) { mem[store].delete(id); return; } await run(store, 'readwrite', s => s.delete(id)); },
+      async clear() { await ready; for (const s of STORES) { if (!db) mem[s].clear(); else await run(s, 'readwrite', o => o.clear()); } },
+    };
+  })();
+
+  // ----------------------------------------- workers: filters (latest wins) and corner detection
+  const WORKER_SRC = (() => {
+    try { return $('ddsrc').textContent + '\n;onmessage=e=>{const m=e.data;try{if(m.op==="detect"){postMessage({id:m.id,out:DDQ.detect(m.img,m.weights)});return;}const o=DD.apply(m.name,m.img,m.params);postMessage({id:m.id,out:o},[o.data.buffer]);}catch(err){postMessage({id:m.id,err:String(err)});}};'; } catch (e) { return null; }
+  })();
+  function makeWorker() { try { return WORKER_SRC ? new Worker(URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' }))) : null; } catch (e) { return null; } }
+  // Workers are created on first use and can be shut down, so the page is as light as possible while the phone's camera app is open.
+  const Proc = (() => {
+    let worker = null, dead = false, seq = 0, busy = false, waiting = null; const pending = new Map();
+    function finish() { busy = false; if (waiting) { const j = waiting; waiting = null; start(j); } }
+    function start(job) {
+      busy = true; const id = ++seq;
+      pending.set(id, { res: v => { finish(); job.res(v); }, rej: e => { finish(); job.rej(e); } });
+      worker.postMessage({ id, name: job.name, img: { w: job.img.w, h: job.img.h, data: job.img.data }, params: job.params });
+    }
+    function ensure() {
+      if (worker || dead) return; worker = makeWorker(); if (!worker) { dead = true; return; }
+      worker.onmessage = e => { const m = e.data, p = pending.get(m.id); if (!p) return; pending.delete(m.id); m.err ? p.rej(new Error(m.err)) : p.res(m.out); };
+      worker.onerror = () => { worker = null; dead = true; busy = false; if (waiting) { waiting.rej(new Error('worker failed')); waiting = null; } for (const p of pending.values()) p.rej(new Error('worker failed')); pending.clear(); };
+    }
+    return {
+      run(name, img, params) {
+        ensure();
+        if (!worker) return new Promise(res => setTimeout(() => res(DD.apply(name, img, params)), 0));
+        return new Promise((res, rej) => { const job = { name, img, params, res, rej }; if (busy) { if (waiting) waiting.rej(new Error('stale')); waiting = job; } else start(job); });
+      },
+      kill() { if (worker && !busy) { worker.terminate(); worker = null; } },
+    };
+  })();
+  const Det = (() => {
+    let worker = null, dead = false, seq = 0; const pending = new Map();
+    function ensure() {
+      if (worker || dead) return; worker = makeWorker(); if (!worker) { dead = true; return; }
+      worker.onmessage = e => { const m = e.data, p = pending.get(m.id); if (!p) return; pending.delete(m.id); m.err ? p.rej(new Error(m.err)) : p.res(m.out); };
+      worker.onerror = () => { worker = null; dead = true; for (const p of pending.values()) p.rej(new Error('worker failed')); pending.clear(); };
+    }
+    return {
+      detect(img, weights) {
+        ensure();
+        if (!worker) return new Promise((res, rej) => setTimeout(() => { try { res(DDQ.detect(img, weights)); } catch (e) { rej(e); } }, 0));
+        return new Promise((res, rej) => { const id = ++seq; pending.set(id, { res, rej }); worker.postMessage({ op: 'detect', id, img: { w: img.w, h: img.h, data: img.data }, weights }); });
+      },
+      kill() { if (worker && !pending.size) { worker.terminate(); worker = null; } },
+    };
+  })();
+
+  // ------------------------------------------------------------------- ranker (trained weights)
+  let ranker = null; // { id:'ranker', w:[...], n, at, version }
+  const rankerName = () => (ranker ? 'trained on ' + ranker.n + ' scans' : 'built-in');
+  const trainable = s => s.raw && s.crop && s.crop.train && s.cands && s.cands.length && s.auto && s.auto.version === DDQ.VERSION && s.quad;
+  const toSample = s => ({ cands: s.cands, truth: s.quad.flat(), w: s.rw, h: s.rh });
+
+  // ------------------------------------------------------------------------------ library
+  async function refreshHome() {
+    const [sources, labels, inbox] = await Promise.all([Store.all('sources'), Store.all('labels'), Store.all('inbox')]);
+    sources.sort((a, b) => b.created - a.created);
+    const crops = sources.filter(s => s.crop), avg = labels.length ? (labels.reduce((s, l) => s + l.rating, 0) / labels.length).toFixed(1) : '–';
+    $('stats').textContent = `${sources.length} scans · ${crops.length} crop labels · ${labels.length} filter labels · avg filter rating ${avg}`;
+    $('empty').hidden = sources.length > 0;
+    $('inboxBox').hidden = inbox.length === 0 || queue.length > 0;
+    $('inboxTitle').textContent = `${inbox.length} photo${inbox.length === 1 ? '' : 's'} waiting`;
+    // training panel
+    const samples = sources.filter(trainable).map(toSample), n = samples.length;
+    if (n) {
+      const b = DDQ.evaluate(samples, DDQ.W0, TOL), t = ranker ? DDQ.evaluate(samples, ranker.w, TOL) : null;
+      const rated = crops.map(s => s.crop.rating), good = rated.filter(r => r >= 4).length;
+      $('trainStats').textContent = `${n} corrected scans · you rated ${good} of ${rated.length} auto-crops Close or Perfect · built-in picks right on ${pct(b.hit)}` + (t ? ` · trained picks right on ${pct(t.hit)}` : '') + ` · best possible ${pct(b.reachable)}`;
+    } else $('trainStats').textContent = 'No corrected scans yet.';
+    $('btnTrain').disabled = n < 5; $('btnTrainReset').hidden = !ranker;
+    $('trainNote').textContent = n < 5 ? `Fix the corners on at least 5 scans, then train (${n} so far). Training re-weights how the detector chooses between its guesses, using your corrections.` : `Auto-crop is using ${ranker ? 'weights trained on ' + ranker.n + ' of your scans' : 'the built-in weights'}. "Best possible" is how often any of the detector's guesses was right; training cannot go above it.`;
+    $('ver').textContent = `lab v2 · crop ${DDQ.VERSION} (${rankerName()}) · filters v1`;
+    const ul = $('list'); for (const im of ul.querySelectorAll('img')) if (im.src) URL.revokeObjectURL(im.src); ul.textContent = '';
+    for (const s of sources) {
+      const mine = labels.filter(l => l.scanId === s.id), li = document.createElement('li'); li.className = 'scan';
+      const img = document.createElement('img'); img.alt = ''; if (s.thumb) img.src = URL.createObjectURL(s.thumb);
+      const open = document.createElement('button'); open.className = 'open'; open.type = 'button';
+      const cropTxt = s.crop ? `crop ${CROP_RATINGS[s.crop.rating - 1][1].toLowerCase()}` : 'no crop label';
+      open.innerHTML = `<strong>${fmtDate(s.created)}</strong><span>${s.w}×${s.h} · ${cropTxt} · ${mine.length} filter label${mine.length === 1 ? '' : 's'}</span>`;
+      open.onclick = async () => { toast('Opening…'); await tick(); try { openLab(await decode(s.blob, MAX_SRC), { scanId: s.id }); } catch (e) { showError('Could not open this scan', String(e && e.message || e)); } };
+      const edit = document.createElement('button'); edit.className = 'del'; edit.type = 'button'; edit.textContent = 'Corners'; edit.hidden = !s.raw;
+      edit.onclick = async () => { toast('Opening…'); await tick(); try { openCrop(await decode(s.raw, MAX_SRC), { existing: s, from: s.from }); } catch (e) { showError('Could not open this photo', String(e && e.message || e)); } };
+      const del = document.createElement('button'); del.className = 'del'; del.type = 'button'; del.textContent = 'Delete';
+      del.onclick = async () => {
+        if (del.dataset.arm !== '1') { del.dataset.arm = '1'; del.textContent = 'Sure?'; setTimeout(() => { del.dataset.arm = ''; del.textContent = 'Delete'; }, 2500); return; }
+        for (const l of mine) await Store.del('labels', l.id);
+        await Store.del('sources', s.id); refreshHome();
+      };
+      li.append(img, open, edit, del); ul.append(li);
+    }
+  }
+  const goHome = () => { show('vHome'); refreshHome(); };
+
+  // ------------------------------------------------------------------------ capture/import
+  let queue = []; // inbox ids still to process
+  /** Every photo is written to the on-device inbox before anything else happens, so a failed decode or a reload cannot lose it. */
+  async function takeFiles(files, from) {
+    const list = [...files]; if (!list.length) return;
+    toast(list.length > 1 ? `Saving ${list.length} photos…` : 'Saving photo…');
+    for (const f of list) { const id = uid(); try { await Store.put('inbox', { id, blob: f, created: Date.now(), from }); queue.push(id); } catch (e) { showError('Could not store a photo', 'This browser refused to save it. Free up storage and try again.'); } }
+    if ($('vHome').hidden && $('vCam').hidden) return; // already busy with a scan; these wait in the queue
+    await nextFromQueue();
+  }
+  async function nextFromQueue() {
+    const id = queue.shift(); if (!id) { goHome(); return; }
+    const item = await Store.get('inbox', id); if (!item) return nextFromQueue();
+    toast(queue.length ? `Loading photo (${queue.length} more waiting)…` : 'Loading photo…'); await tick();
+    let img;
+    try { img = await decode(item.blob, MAX_SRC); }
+    catch (e) { showError('Could not read that photo', `The photo is still saved under "photos waiting". (${e && e.message || e})`); queue = []; goHome(); return; }
+    openCrop(img, { inboxId: id, from: item.from });
+  }
+  // The value is cleared before each use too, so picking a file with the same name still fires a change event.
+  // Android can throw this page away while the camera app is in front; the photo is then lost and the page reloads.
+  // So: make the page as small as possible first, and leave a note that survives a reload so the reload can be explained.
+  const PENDING = 'docdoc-lab-capture';
+  const mark = v => { try { v ? localStorage.setItem(PENDING, String(Date.now())) : localStorage.removeItem(PENDING); } catch (e) { /* storage blocked */ } };
+  function slim() { Proc.kill(); Det.kill(); release(crop.src); crop.src = null; crop.img = null; lab.warped = null; lab.prev = null; lab.last = null; release($('labCv')); release($('cropCv')); }
+  function wireInput(id, from) {
+    const el = $(id); let done = false;
+    const got = () => { if (done || !el.files || !el.files.length) return; done = true; mark(false); const fs = [...el.files]; const fresh = el.cloneNode(false); fresh.value = ''; el.replaceWith(fresh); /* a clone keeps the chosen file in Chromium, so it is cleared */ wireInput(id, from); takeFiles(fs, from); };
+    el.addEventListener('click', () => { el.value = ''; done = false; slim(); if (from === 'phone-camera') mark(true); });
+    el.addEventListener('change', got); el.addEventListener('input', got);
+    // some browsers fill in the file without firing an event: look again when the page comes back to the front
+    const back = () => { if (!document.hidden && el.isConnected) setTimeout(() => { got(); if (!done && el.isConnected && !el.files.length) mark(false); }, 1200); };
+    document.addEventListener('visibilitychange', back); window.addEventListener('focus', back);
+  }
+  wireInput('inCam', 'phone-camera'); wireInput('inFile', 'import');
+  $('btnInboxGo').onclick = async () => { queue = (await Store.all('inbox')).sort((a, b) => a.created - b.created).map(i => i.id); nextFromQueue(); };
+  $('btnInboxDrop').onclick = async () => { for (const i of await Store.all('inbox')) await Store.del('inbox', i.id); queue = []; refreshHome(); };
+
+  function makeSample() {
+    const W = 1600, H = 1200, c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.fillStyle = '#5c5f63'; x.fillRect(0, 0, W, H);
+    x.save(); x.translate(W / 2, H / 2); x.rotate(-0.045);
+    const pw = 820, ph = 1060, L = -pw / 2 + 60;
+    x.fillStyle = '#faf9f5'; x.fillRect(-pw / 2, -ph / 2, pw, ph);
+    x.fillStyle = '#14181f'; x.font = '700 40px Georgia, serif'; x.fillText('RENTAL AGREEMENT', L, -ph / 2 + 100);
+    x.fillRect(L, -ph / 2 + 120, pw - 120, 3);
+    x.font = '18px Georgia, serif'; x.fillStyle = '#2a2f38';
+    const para = ['This agreement is made between the Landlord and the Tenant named below', 'for the property at the address stated. The tenancy begins on the', 'commencement date and continues for the fixed term unless ended', 'earlier in accordance with the conditions set out in this document.'];
+    let y = -ph / 2 + 180;
+    for (let b = 1; b <= 5; b++) { x.font = '700 20px system-ui, sans-serif'; x.fillText(b + '. Clause', L, y); y += 30; x.font = '18px Georgia, serif'; for (const t of para) { x.fillText(t, L, y); y += 27; } y += 26; }
+    x.strokeStyle = '#bd2832'; x.lineWidth = 6; x.beginPath(); x.arc(pw / 2 - 150, ph / 2 - 140, 66, 0, 7); x.stroke();
+    x.fillStyle = '#bd2832'; x.font = '700 21px system-ui, sans-serif'; x.fillText('APPROVED', pw / 2 - 208, ph / 2 - 133);
+    x.restore();
+    x.globalCompositeOperation = 'multiply';
+    let g = x.createLinearGradient(0, 0, W, H * 0.25); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#8f8f8f'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+    x.save(); x.translate(W * 0.46, H * 0.56); x.rotate(-0.62);
+    g = x.createLinearGradient(0, -230, 0, 230); g.addColorStop(0, '#ffffff'); g.addColorStop(0.32, '#7d7d7d'); g.addColorStop(0.68, '#7d7d7d'); g.addColorStop(1, '#ffffff');
+    x.fillStyle = g; x.fillRect(-1100, -230, 2200, 460); x.restore();
+    x.fillStyle = '#ffe6c2'; x.fillRect(0, 0, W, H);
+    const out = fromCanvas(c); release(c); return out;
+  }
+  $('btnSample').onclick = () => openCrop(makeSample(), { from: 'sample' });
+
+  // ------------------------------------------------------------------------ in-app camera
+  const cam = { stream: null, track: null, count: 0, busy: false, last: null };
+  const camSupported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  if (!camSupported) { $('btnCam').hidden = true; $('lblSysCam').classList.add('primary'); $('lblSysCam').textContent = 'Scan with camera'; }
+  async function startStream() {
+    cam.stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 3840 }, height: { ideal: 2160 } } });
+    cam.track = cam.stream.getVideoTracks()[0]; const v = $('camVideo'); v.srcObject = cam.stream; try { await v.play(); } catch (e) { /* autoplay attr covers it */ }
+    let caps = {}; try { caps = cam.track.getCapabilities ? cam.track.getCapabilities() : {}; } catch (e) { caps = {}; }
+    $('btnCamTorch').hidden = !caps.torch; $('btnCamTorch').setAttribute('aria-pressed', 'false');
+    if (caps.zoom && caps.zoom.max > caps.zoom.min) { const z = $('camZoom'); z.min = caps.zoom.min; z.max = Math.min(caps.zoom.max, 8); z.step = caps.zoom.step || 0.1; z.value = caps.zoom.min; $('camZoomOut').textContent = (+z.value).toFixed(1) + '×'; $('camZoomBox').hidden = false; } else $('camZoomBox').hidden = true;
+  }
+  function stopStream() { if (cam.stream) for (const t of cam.stream.getTracks()) t.stop(); cam.stream = null; cam.track = null; $('camVideo').srcObject = null; }
+  async function openCam() {
+    cam.count = 0; $('btnCamDone').disabled = true; $('btnCamDone').textContent = 'Done'; $('camLast').hidden = true;
+    try { await startStream(); }
+    catch (e) {
+      const denied = e && (e.name === 'NotAllowedError' || e.name === 'SecurityError');
+      if (!window.isSecureContext) { showError('The in-app camera needs an https address', `This page is open from ${location.protocol}// (a local file), and browsers only allow a page to use the camera when it is served over https. The site camera permission does not apply to local files. Host the app folder on an https address to use the in-app camera; until then use "Import photos".`); goHome(); return; }
+      showError('The in-app camera is not available here', denied ? 'Camera access was blocked. Allow the camera for this page, or use "Phone camera app" instead. Inside the Claude page viewer only the phone camera app works; the in-app camera needs the hosted or installed version.' : `No usable camera was found (${e && e.name || e}). Use "Phone camera app" or "Import photos".`);
+      goHome(); return;
+    }
+    show('vCam');
+  }
+  $('btnCam').onclick = openCam;
+  $('btnCamTorch').onclick = async () => { const b = $('btnCamTorch'), on = b.getAttribute('aria-pressed') !== 'true'; try { await cam.track.applyConstraints({ advanced: [{ torch: on }] }); b.setAttribute('aria-pressed', String(on)); } catch (e) { toast('The light is not available on this camera.'); } };
+  $('camZoom').oninput = async () => { const z = +$('camZoom').value; $('camZoomOut').textContent = z.toFixed(1) + '×'; try { await cam.track.applyConstraints({ advanced: [{ zoom: z }] }); } catch (e) { /* ignore */ } };
+  async function shoot() {
+    if (cam.busy || !cam.track) return; cam.busy = true; const v = $('camVideo');
+    $('camFlash').hidden = false; setTimeout(() => { $('camFlash').hidden = true; }, 120);
+    let blob = null;
+    try { if (window.ImageCapture) blob = await Promise.race([new ImageCapture(cam.track).takePhoto(), new Promise((_, rej) => setTimeout(() => rej(new Error('slow')), 4000))]); } catch (e) { blob = null; }
+    if (!blob && v.videoWidth) { const c = document.createElement('canvas'); c.width = v.videoWidth; c.height = v.videoHeight; c.getContext('2d').drawImage(v, 0, 0); blob = await blobOf(c, 0.92); release(c); }
+    if (!blob) { toast('The camera did not return a photo. Try again.'); cam.busy = false; return; }
+    const id = uid();
+    try { await Store.put('inbox', { id, blob, created: Date.now(), from: 'in-app-camera' }); queue.push(id); cam.count++; }
+    catch (e) { toast('Could not store that photo.'); cam.busy = false; return; }
+    if (cam.last) URL.revokeObjectURL(cam.last); cam.last = URL.createObjectURL(blob); $('camLast').src = cam.last; $('camLast').hidden = false;
+    $('btnCamDone').disabled = false; $('btnCamDone').textContent = `Done (${cam.count})`; cam.busy = false;
+  }
+  $('btnShot').onclick = shoot;
+  $('btnCamDone').onclick = () => { stopStream(); nextFromQueue(); };
+  $('btnCamClose').onclick = () => { stopStream(); if (queue.length) nextFromQueue(); else goHome(); };
+  document.addEventListener('visibilitychange', () => { if ($('vCam').hidden) return; if (document.hidden) stopStream(); else if (!cam.stream) startStream().catch(() => goHome()); });
+
+  // ----------------------------------------------------------------------- corner editor
+  const crop = { img: null, src: null, quad: null, drag: -1, scale: 1, dpr: 1, meta: null, auto: null, autoPx: null, cands: null, rating: 0, manual: false, tags: new Set(), tok: 0, ready: false, leaving: false };
+  const inset = (img, f) => { const a = img.w * f, b = img.h * f; return [[a, b], [img.w - a, b], [img.w - a, img.h - b], [a, img.h - b]]; };
+  const normQ = (q, img) => q.map(p => [+(p[0] / img.w).toFixed(5), +(p[1] / img.h).toFixed(5)]);
+  const pxQ = (q, img) => q.map(p => [p[0] * img.w, p[1] * img.h]);
+  const cropErr = () => (crop.autoPx ? DDQ.quadErr(crop.autoPx, crop.quad, crop.img.w, crop.img.h) : null);
+  function suggestRating() { const e = cropErr(); return e === null ? 1 : e <= 0.004 ? 5 : e <= 0.015 ? 4 : e <= 0.04 ? 3 : 2; }
+  function buildCropRate() {
+    if (!crop.manual) crop.rating = suggestRating();
+    const box = $('cropRate'); box.textContent = '';
+    for (const [n, cap] of CROP_RATINGS) {
+      const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-pressed', String(crop.rating === +n)); b.innerHTML = `<b>${n}</b><span>${cap}</span>`;
+      b.onclick = () => { crop.rating = +n; crop.manual = true; buildCropRate(); }; box.append(b);
+    }
+    const e = cropErr();
+    $('cropErr').textContent = (e === null ? 'Auto-crop did not find the page.' : e <= 0.004 ? 'You have not moved the corners.' : `You moved the worst corner by ${(100 * e).toFixed(1)}% of the photo diagonal.`) + (crop.manual ? ' Rating set by you.' : ' Rating suggested from that; tap to change it.');
+  }
+  function buildCropTags() {
+    const box = $('cropTags'); box.textContent = '';
+    for (const t of CROP_TAGS) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = t; b.setAttribute('aria-pressed', String(crop.tags.has(t)));
+      b.onclick = () => { crop.tags.has(t) ? crop.tags.delete(t) : crop.tags.add(t); buildCropTags(); }; box.append(b);
+    }
+  }
+  function setCropBusy(on) { crop.ready = !on; $('cropWait').hidden = !on; for (const id of ['btnAuto', 'btnFull', 'btnCropNext', 'btnCropGo']) $(id).disabled = on; }
+  async function openCrop(img, meta) {
+    release(crop.src); crop.img = img; crop.src = toCanvas(img); crop.meta = meta || {}; crop.leaving = false; const tok = ++crop.tok, ex = crop.meta.existing;
+    crop.auto = null; crop.autoPx = null; crop.cands = null; crop.manual = false; crop.tags = new Set(); crop.quad = inset(img, 0.05);
+    $('chkId').checked = !!(ex && ex.crop && ex.crop.idRatio); $('chkTrain').checked = ex && ex.crop ? !!ex.crop.train : true;
+    $('cropQueue').textContent = queue.length ? `${queue.length} more photo${queue.length === 1 ? '' : 's'} waiting after this one.` : '';
+    $('toast').hidden = true; show('vCrop'); layoutCrop(); drawCrop();
+    if (ex) {
+      crop.auto = ex.auto || null; crop.cands = ex.cands || null; crop.autoPx = ex.auto && ex.auto.quad ? pxQ(ex.auto.quad, img) : null; crop.quad = pxQ(ex.quad, img);
+      if (ex.crop) { crop.rating = ex.crop.rating; crop.manual = true; crop.tags = new Set(ex.crop.tags || []); }
+      $('cropNote').textContent = 'Editing the corners of a saved scan. The original auto-crop result is kept for training.';
+      setCropBusy(false); drawCrop(); buildCropRate(); buildCropTags(); return;
+    }
+    setCropBusy(true); $('cropNote').textContent = 'Finding the page…'; buildCropRate(); buildCropTags();
+    let r = null; const t0 = performance.now();
+    try { r = await Det.detect(downscale(img, DET_MAX), ranker ? ranker.w : null); } catch (e) { r = null; }
+    if (tok !== crop.tok) return;
+    const ms = Math.round(performance.now() - t0);
+    if (r) { crop.cands = r.cands; const small = { w: Math.round(img.w * Math.min(1, DET_MAX / Math.max(img.w, img.h))), h: Math.round(img.h * Math.min(1, DET_MAX / Math.max(img.w, img.h))) };
+      crop.auto = { quad: r.quad ? normQ(r.quad, small) : null, confidence: +r.confidence.toFixed(3), version: r.version, ranker: rankerName(), ms }; }
+    if (crop.auto && crop.auto.quad) { crop.autoPx = pxQ(crop.auto.quad, img); crop.quad = crop.autoPx.map(p => p.slice()); $('cropNote').textContent = `Corners placed automatically in ${ms} ms. Drag any corner that is off; your fix is what trains the auto-crop.`; }
+    else { crop.quad = inset(img, 0.02); $('cropNote').textContent = 'No page edges found, so the whole photo is selected. Drag the four corners onto the page.'; }
+    setCropBusy(false); drawCrop(); buildCropRate();
+  }
+  function layoutCrop() {
+    const cv = $('cropCv'), stage = $('cropStage');
+    const maxW = Math.min(stage.clientWidth - 18, 720), maxH = Math.round(window.innerHeight * 0.56);
+    crop.scale = Math.min(maxW / crop.img.w, maxH / crop.img.h); crop.dpr = Math.min(2, window.devicePixelRatio || 1);
+    const cw = Math.round(crop.img.w * crop.scale), ch = Math.round(crop.img.h * crop.scale);
+    cv.style.width = cw + 'px'; cv.style.height = ch + 'px'; cv.width = Math.round(cw * crop.dpr); cv.height = Math.round(ch * crop.dpr);
+  }
+  function drawCrop() {
+    const cv = $('cropCv'), x = cv.getContext('2d'), k = cv.width / crop.img.w;
+    x.drawImage(crop.src, 0, 0, cv.width, cv.height);
+    const P = crop.quad.map(p => [p[0] * k, p[1] * k]);
+    x.save(); x.fillStyle = 'rgba(8,12,16,0.5)'; x.beginPath(); x.rect(0, 0, cv.width, cv.height);
+    x.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) x.lineTo(P[i][0], P[i][1]); x.closePath(); x.fill('evenodd'); x.restore();
+    x.strokeStyle = '#39c2a6'; x.lineWidth = 2 * crop.dpr; x.beginPath(); x.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) x.lineTo(P[i][0], P[i][1]); x.closePath(); x.stroke();
+    for (const p of P) { x.beginPath(); x.arc(p[0], p[1], 12 * crop.dpr, 0, 7); x.fillStyle = '#fff'; x.fill(); x.lineWidth = 3 * crop.dpr; x.stroke(); }
+  }
+  function loupe(i) {
+    const L = $('loupe'), x = L.getContext('2d'), [px, py] = crop.quad[i], half = Math.max(16, Math.round(crop.img.w / 60));
+    x.fillStyle = '#000'; x.fillRect(0, 0, 220, 220); x.imageSmoothingEnabled = false;
+    x.drawImage(crop.src, px - half, py - half, half * 2, half * 2, 0, 0, 220, 220);
+    x.strokeStyle = '#39c2a6'; x.lineWidth = 2; x.beginPath(); x.moveTo(110, 70); x.lineTo(110, 150); x.moveTo(70, 110); x.lineTo(150, 110); x.stroke();
+    const onLeft = px < crop.img.w / 2; L.style.left = onLeft ? 'auto' : '12px'; L.style.right = onLeft ? '12px' : 'auto'; L.hidden = false;
+  }
+  function pointer(e) { const r = $('cropCv').getBoundingClientRect(); return [((e.clientX - r.left) / r.width) * crop.img.w, ((e.clientY - r.top) / r.height) * crop.img.h]; }
+  const cropCv = $('cropCv');
+  cropCv.addEventListener('pointerdown', e => {
+    if (!crop.ready) return; const [x, y] = pointer(e), reach = 44 / crop.scale; let best = -1, bd = reach;
+    crop.quad.forEach((p, i) => { const d = Math.hypot(p[0] - x, p[1] - y); if (d < bd) { bd = d; best = i; } });
+    if (best < 0) return; crop.drag = best; cropCv.setPointerCapture(e.pointerId); loupe(best); e.preventDefault();
+  });
+  cropCv.addEventListener('pointermove', e => {
+    if (crop.drag < 0) return; const [x, y] = pointer(e);
+    crop.quad[crop.drag] = [Math.max(0, Math.min(crop.img.w, x)), Math.max(0, Math.min(crop.img.h, y))];
+    drawCrop(); loupe(crop.drag);
+  });
+  const endDrag = () => { if (crop.drag >= 0) { crop.drag = -1; $('loupe').hidden = true; buildCropRate(); } };
+  cropCv.addEventListener('pointerup', endDrag); cropCv.addEventListener('pointercancel', endDrag);
+  window.addEventListener('resize', () => { if (!$('vCrop').hidden && crop.img) { layoutCrop(); drawCrop(); } });
+  $('btnAuto').onclick = () => { if (crop.autoPx) { crop.quad = crop.autoPx.map(p => p.slice()); $('cropNote').textContent = 'Back to the automatic corners.'; } else { crop.quad = inset(crop.img, 0.02); $('cropNote').textContent = 'Auto-crop found no page on this photo.'; } drawCrop(); buildCropRate(); };
+  $('btnFull').onclick = () => { crop.quad = inset(crop.img, 0); drawCrop(); buildCropRate(); };
+
+  /** Store the scan: original photo, auto-crop result, corrected corners, crop label, straightened image. */
+  async function saveScan() {
+    const img = crop.img, ex = crop.meta.existing, q = DDQ.orderQuad(crop.quad.map(p => p.slice()));
+    let [W, H] = DD.quadSize(q);
+    if ($('chkId').checked) { if (W >= H) H = Math.round(W / ID1); else W = Math.round(H / ID1); }
+    const s = Math.min(1, MAX_SRC / Math.max(W, H)); W = Math.max(8, Math.round(W * s)); H = Math.max(8, Math.round(H * s));
+    const warped = DD.warp(img, q, W, H), wc = toCanvas(warped), th = document.createElement('canvas'); th.width = 160; th.height = Math.max(8, Math.round(160 * H / W));
+    th.getContext('2d').drawImage(wc, 0, 0, th.width, th.height);
+    let raw = ex && ex.raw, rw = ex && ex.rw, rh = ex && ex.rh;
+    if (!raw) { const small = downscale(img, RAW_MAX), rc = toCanvas(small); raw = await blobOf(rc, 0.88); rw = small.w; rh = small.h; release(rc); }
+    const e = cropErr();
+    const rec = Object.assign({}, ex || {}, {
+      id: ex ? ex.id : uid(), raw, rw, rh, blob: await blobOf(wc, 0.92), thumb: await blobOf(th, 0.7), w: W, h: H, quad: normQ(q, img), auto: crop.auto, cands: crop.cands,
+      crop: { rating: crop.rating, manual: crop.manual, tags: [...crop.tags], err: e === null ? null : +e.toFixed(5), moved: e === null || e > 0.004, train: $('chkTrain').checked, idRatio: $('chkId').checked, at: Date.now() },
+      suggested: DD.suggest(W, H), created: ex ? ex.created : Date.now(), ua: navigator.userAgent, from: crop.meta.from || (ex && ex.from) || 'import',
+    });
+    release(wc); release(th);
+    await Store.put('sources', rec);
+    if (crop.meta.inboxId) await Store.del('inbox', crop.meta.inboxId);
+    return { rec, warped };
+  }
+  function leaveCrop() { release(crop.src); crop.src = null; crop.img = null; crop.tok++; }
+  async function cropSave(thenLab) {
+    if (!crop.ready || crop.leaving) return; crop.leaving = true; setCropBusy(true); $('cropWait').textContent = 'Saving…'; await tick();
+    try {
+      const { rec, warped } = await saveScan(); $('cropWait').textContent = 'Finding edges…'; leaveCrop();
+      if (thenLab) openLab(warped, { scanId: rec.id }); else { toast('Crop saved.'); await nextFromQueue(); }
+    } catch (e) { $('cropWait').textContent = 'Finding edges…'; crop.leaving = false; setCropBusy(false); toast('Could not save. Storage may be full or blocked.'); }
+  }
+  $('btnCropGo').onclick = () => cropSave(true);
+  $('btnCropNext').onclick = () => cropSave(false);
+  $('btnCropCancel').onclick = async () => { if (crop.leaving) return; crop.leaving = true; if (crop.meta.inboxId) await Store.del('inbox', crop.meta.inboxId); leaveCrop(); if (queue.length) nextFromQueue(); else goHome(); };
+
+  // ------------------------------------------------------------------------- crop training
+  $('btnTrain').onclick = async () => {
+    const btn = $('btnTrain'); btn.disabled = true; $('trainResult').textContent = 'Training…'; await tick();
+    try {
+      const samples = (await Store.all('sources')).filter(trainable).map(toSample), n = samples.length;
+      const before = DDQ.evaluate(samples, DDQ.W0, TOL), w = DDQ.train(samples, DDQ.W0, { iters: 400, l2: Math.min(0.2, 0.6 / n) }), after = DDQ.evaluate(samples, w, TOL);
+      const cv = n >= 10 ? DDQ.crossValidate(samples, DDQ.W0, 5) : null, miss = Math.round((1 - before.reachable) * n);
+      let msg = `Built-in weights picked the right corners on ${pct(before.hit)} of your ${n} scans; trained weights on ${pct(after.hit)}.`;
+      msg += cv === null ? ' That figure is on the same scans it trained on, so treat it as optimistic until you have 10 or more.' : ` On scans held out from training the estimate is ${pct(cv)}.`;
+      if (miss) msg += ` On ${miss} scan${miss === 1 ? '' : 's'} none of the detector's guesses was close, so re-weighting cannot fix ${miss === 1 ? 'it' : 'them'}; those photos are the ones to export.`;
+      if (after.hit + 1e-9 < before.hit) { msg += ' Training did not help, so the built-in weights stay in use.'; }
+      else { ranker = { id: 'ranker', w: Array.from(w, v => +v.toFixed(4)), n, at: Date.now(), version: DDQ.VERSION, before: before.hit, after: after.hit, heldOut: cv }; await Store.put('kv', ranker); msg += ' New photos now use the trained weights.'; }
+      $('trainResult').textContent = msg;
+    } catch (e) { $('trainResult').textContent = 'Training failed: ' + (e && e.message || e); }
+    refreshHome();
+  };
+  $('btnTrainReset').onclick = async () => { ranker = null; await Store.del('kv', 'ranker'); $('trainResult').textContent = 'Back to the built-in weights.'; refreshHome(); };
+
+  // ------------------------------------------------------------------------------ lab
+  const lab = { warped: null, prev: null, filter: 'document', params: {}, rating: 0, tags: new Set(), tok: 0, last: null, lastKey: '', meta: null, suggested: 'document', timer: 0 };
+  function openLab(warped, meta) {
+    lab.warped = warped; lab.prev = downscale(warped, PREV); lab.meta = meta;
+    lab.suggested = DD.suggest(warped.w, warped.h); lab.filter = lab.suggested;
+    lab.params = JSON.parse(JSON.stringify(DD.DEFAULTS)); lab.rating = 0; lab.tags = new Set();
+    lab.last = null; lab.lastKey = ''; paint(lab.prev); $('ms').textContent = ''; $('toast').hidden = true;
+    $('sugg').textContent = `Suggested: ${LABELS[lab.suggested]} (${lab.suggested === 'photo' ? 'card-shaped scan' : 'page-shaped scan'})`;
+    $('saveNote').textContent = queue.length ? `${queue.length} more photo${queue.length === 1 ? '' : 's'} waiting after this one.` : '';
+    buildChips(); buildSliders(); buildRate(); buildTags(); show('vLab'); render();
+  }
+  function buildChips() {
+    const box = $('chips'); box.textContent = '';
+    for (const f of Object.keys(LABELS)) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.setAttribute('aria-pressed', String(f === lab.filter));
+      b.innerHTML = LABELS[f] + (f === lab.suggested ? ' <span class="star" aria-label="suggested">●</span>' : '');
+      b.onclick = () => { lab.filter = f; buildChips(); buildSliders(); render(); }; box.append(b);
+    }
+  }
+  function buildSliders() {
+    const box = $('sliders'); box.textContent = '';
+    for (const [key, label, min, max, step] of SLIDERS[lab.filter]) {
+      const id = 'sl-' + key, d = document.createElement('div'); d.className = 'slider';
+      const l = document.createElement('label'); l.htmlFor = id; l.textContent = label;
+      const o = document.createElement('output'); o.textContent = lab.params[lab.filter][key].toFixed(2);
+      const r = document.createElement('input'); r.type = 'range'; r.id = id; r.min = min; r.max = max; r.step = step; r.value = lab.params[lab.filter][key];
+      r.oninput = () => { lab.params[lab.filter][key] = +r.value; o.textContent = (+r.value).toFixed(2); clearTimeout(lab.timer); lab.timer = setTimeout(render, 70); };
+      d.append(l, o, r); box.append(d);
+    }
+    $('btnReset').hidden = SLIDERS[lab.filter].length === 0;
+  }
+  function buildRate() {
+    const box = $('rate'); box.textContent = '';
+    for (const [n, cap] of RATINGS) {
+      const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-pressed', String(lab.rating === +n)); b.innerHTML = `<b>${n}</b><span>${cap}</span>`;
+      b.onclick = () => { lab.rating = +n; buildRate(); }; box.append(b);
+    }
+  }
+  function buildTags() {
+    const box = $('tags'); box.textContent = '';
+    for (const t of TAGS) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = t; b.setAttribute('aria-pressed', String(lab.tags.has(t)));
+      b.onclick = () => { lab.tags.has(t) ? lab.tags.delete(t) : lab.tags.add(t); buildTags(); }; box.append(b);
+    }
+  }
+  function paint(img) { const cv = $('labCv'); cv.width = img.w; cv.height = img.h; cv.getContext('2d').putImageData(new ImageData(img.data, img.w, img.h), 0, 0); }
+  async function render() {
+    const tok = ++lab.tok, name = lab.filter;
+    if (name === 'original') { lab.last = lab.prev; lab.lastKey = 'original' + JSON.stringify(lab.params.original); paint(lab.prev); $('ms').textContent = ''; $('wait').hidden = true; return; }
+    $('wait').hidden = false; const t0 = performance.now();
+    try {
+      const out = await Proc.run(name, lab.prev, lab.params[name]);
+      if (tok !== lab.tok) return;
+      lab.last = out; lab.lastKey = name + JSON.stringify(lab.params[name]); paint(out); $('ms').textContent = `${Math.round(performance.now() - t0)} ms · ${out.w}×${out.h}`;
+    } catch (e) { if (e && e.message === 'stale') return; toast('Filter failed on this image.'); }
+    if (tok === lab.tok) $('wait').hidden = true;
+  }
+  const cmp = $('cmp');
+  cmp.addEventListener('pointerdown', e => { e.preventDefault(); if (lab.prev) paint(lab.prev); });
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) cmp.addEventListener(ev, () => { if (lab.last) paint(lab.last); });
+  cmp.addEventListener('contextmenu', e => e.preventDefault());
+  $('btnReset').onclick = () => { lab.params[lab.filter] = Object.assign({}, DD.DEFAULTS[lab.filter]); buildSliders(); render(); };
+  $('btnDone').onclick = () => { lab.tok++; lab.warped = null; lab.prev = null; lab.last = null; release($('labCv')); if (queue.length) nextFromQueue(); else goHome(); };
+  $('btnSave').onclick = async () => {
+    if (!lab.rating) { toast('Pick a rating first.'); return; }
+    if (!lab.last || lab.lastKey !== lab.filter + JSON.stringify(lab.params[lab.filter])) { toast('Preview is still updating. Try again in a second.'); return; }
+    const btn = $('btnSave'); btn.disabled = true;
+    try {
+      const m = lab.meta, oc = toCanvas(lab.last);
+      await Store.put('labels', { id: m.scanId + '-' + Date.now().toString(36), scanId: m.scanId, filter: lab.filter, params: Object.assign({}, lab.params[lab.filter]), rating: lab.rating, tags: [...lab.tags], created: Date.now(), outBlob: await blobOf(oc, 0.88), pw: lab.last.w, ph: lab.last.h });
+      release(oc); toast('Label saved. Try another filter on the same scan, or tap Done.');
+      lab.rating = 0; lab.tags = new Set(); buildRate(); buildTags();
+    } catch (e) { toast('Could not save. Storage may be blocked in this browser.'); }
+    btn.disabled = false;
+  };
+
+  // ----------------------------------------------------------------------------- export
+  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc32 = u8 => { let c = 0xffffffff; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+  function makeZip(files) { // store-only zip, UTF-8 names
+    const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+    const d = new Date(), dosT = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1), dosD = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+    for (const f of files) {
+      const name = enc.encode(f.name), crc = crc32(f.data), n = f.data.length;
+      const lh = new DataView(new ArrayBuffer(30)); lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+      lh.setUint16(10, dosT, true); lh.setUint16(12, dosD, true); lh.setUint32(14, crc, true); lh.setUint32(18, n, true); lh.setUint32(22, n, true); lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+      const ch = new DataView(new ArrayBuffer(46)); ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+      ch.setUint16(12, dosT, true); ch.setUint16(14, dosD, true); ch.setUint32(16, crc, true); ch.setUint32(20, n, true); ch.setUint32(24, n, true); ch.setUint16(28, name.length, true); ch.setUint32(42, off, true);
+      parts.push(new Uint8Array(lh.buffer), name, f.data); central.push(new Uint8Array(ch.buffer), name); off += 30 + name.length + n;
+    }
+    let cs = 0; for (const c of central) cs += c.length;
+    const end = new DataView(new ArrayBuffer(22)); end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true); end.setUint32(12, cs, true); end.setUint32(16, off, true);
+    return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: 'application/zip' });
+  }
+  async function deliver(blob, filename) {
+    try { const dl = window.claude && (await window.claude.use('downloads')); if (dl) { await dl.save({ filename, data: blob }); toast('Export ready.'); return; } } catch (e) { if (e && e.code === 'declined') { toast('Export cancelled.'); return; } }
+    try {
+      const file = new File([blob], filename, { type: 'application/zip' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'DocDoc Lab dataset' }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.append(a); a.click(); a.remove(); toast('Export started.');
+  }
+  async function buildExport() {
+    const [sources, labels] = await Promise.all([Store.all('sources'), Store.all('labels')]);
+    if (!sources.length) return null;
+    const enc = new TextEncoder(), files = [], byId = new Map(sources.map(s => [s.id, s])), u8 = async b => new Uint8Array(await b.arrayBuffer()), crops = [], lines = [];
+    for (const s of sources) {
+      files.push({ name: `sources/${s.id}.jpg`, data: await u8(s.blob) });
+      if (!s.raw) continue;
+      files.push({ name: `originals/${s.id}.jpg`, data: await u8(s.raw) });
+      crops.push(JSON.stringify({ id: s.id, original: `originals/${s.id}.jpg`, straightened: `sources/${s.id}.jpg`, width: s.rw, height: s.rh, corners: s.quad, auto_corners: s.auto ? s.auto.quad : null, auto_confidence: s.auto ? s.auto.confidence : null,
+        auto_ms: s.auto ? s.auto.ms : null, detector: s.auto ? s.auto.version : null, weights: s.auto ? s.auto.ranker : null, rating: s.crop ? s.crop.rating : null, rating_set_by_user: s.crop ? s.crop.manual : null, tags: s.crop ? s.crop.tags : [],
+        error: s.crop ? s.crop.err : null, use_for_training: s.crop ? s.crop.train : false, id_ratio: s.crop ? s.crop.idRatio : false, from: s.from, created: s.created, ua: s.ua, guesses: s.cands || [] }));
+    }
+    for (const l of labels) {
+      files.push({ name: `outputs/${l.id}.jpg`, data: await u8(l.outBlob) });
+      const s = byId.get(l.scanId) || {};
+      lines.push(JSON.stringify({ id: l.id, scan: l.scanId, source: `sources/${l.scanId}.jpg`, output: `outputs/${l.id}.jpg`, filter: l.filter, params: l.params, rating: l.rating, tags: l.tags, created: l.created, suggested: s.suggested, width: s.w, height: s.h, ua: s.ua, engine: 'docdoc-js-1' }));
+    }
+    const readme = 'DocDoc Lab dataset (v2)\n\noriginals/   photos as captured, before cropping (JPEG, longest side up to 1600 px)\nsources/     the same photos straightened with the corrected corners\noutputs/     what each rated filter produced at preview size\ncrops.jsonl  one line per scan: corrected corners and auto-crop corners (both TL,TR,BR,BL as 0-1 fractions of width and height),\n             rating 1-5 (1 missed, 5 perfect), tags, error (worst corner move as a fraction of the diagonal), and every guess the detector made\nlabels.jsonl one line per rated filter result: filter, params, rating 1-5, tags\ndetector.json  detector version, feature names, built-in weights and trained weights if any\n\nThese are your own photos. Keep the file private.\n';
+    const det = { version: DDQ.VERSION, features: DDQ.FEATS, builtin_weights: DDQ.W0, trained: ranker };
+    files.unshift({ name: 'crops.jsonl', data: enc.encode(crops.join('\n') + '\n') }, { name: 'labels.jsonl', data: enc.encode(lines.join('\n') + (lines.length ? '\n' : '')) }, { name: 'detector.json', data: enc.encode(JSON.stringify(det, null, 1)) }, { name: 'README.txt', data: enc.encode(readme) });
+    return makeZip(files);
+  }
+  $('btnExport').onclick = async () => {
+    toast('Building zip…'); await tick();
+    const zip = await buildExport(); if (!zip) { toast('Nothing to export yet. Save a scan first.'); return; }
+    await deliver(zip, `docdoc-lab-${new Date().toISOString().slice(0, 10)}.zip`);
+  };
+  $('btnWipe').onclick = async () => {
+    const b = $('btnWipe');
+    if (b.dataset.arm !== '1') { b.dataset.arm = '1'; b.textContent = 'Tap again to delete everything'; setTimeout(() => { b.dataset.arm = ''; b.textContent = 'Delete all'; }, 3000); return; }
+    await Store.clear(); ranker = null; queue = []; b.dataset.arm = ''; b.textContent = 'Delete all'; $('trainResult').textContent = ''; refreshHome(); toast('Everything deleted, including trained weights.');
+  };
+
+  // ------------------------------------------------------------------------------ boot
+  try { if ('serviceWorker' in navigator && document.querySelector('meta[name="docdoc-target"][content="app"]')) navigator.serviceWorker.register('sw.js'); } catch (e) { /* offline cache is optional */ }
+  try { const t = +localStorage.getItem(PENDING); localStorage.removeItem(PENDING);
+    if (t && Date.now() - t < 10 * 60000) showError('The photo was lost because the browser reloaded this page', 'While the camera app was open, Android closed this page to free memory, so the photo never arrived. Nothing else was lost. To avoid this, take the photos with your normal camera app first and then use "Import photos", or use the in-app camera on the https-hosted version, which never leaves the page.');
+  } catch (e) { /* storage blocked */ }
+  (async () => { try { const r = await Store.get('kv', 'ranker'); if (r && r.version === DDQ.VERSION && Array.isArray(r.w) && r.w.length === DDQ.FEATS.length) ranker = r; } catch (e) { /* built-in */ } refreshHome(); })();
+  window.DocDocLab = { openCrop, makeSample, lab, crop, cam, buildExport, takeFiles, setQuad(q) { crop.quad = q; drawCrop(); buildCropRate(); }, get ranker() { return ranker; }, get queue() { return queue; } };
+})();
+
+</script>
+</body></html>
